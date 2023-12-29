@@ -203,7 +203,7 @@ p {
   z-index: 3;
   width: 100%;
   top: 50%;
-  margin-top: -100px;
+  margin-top: -212px;
   text-align: center;
 }
 #fh5co-home .flexslider .fh5co-text h1 {
@@ -582,6 +582,7 @@ p {
   line-height: 1.6;
   font-size: 16px;
   color: #222;
+  padding-top: 20px;
 }
 #fh5co-featured .fh5co-grid .pricing {
   font-size: 40px;

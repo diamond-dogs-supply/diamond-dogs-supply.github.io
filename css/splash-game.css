@@ -1,3 +1,9 @@
+/* Override sections to match brand */
+#fh5co-featured,
+#fh5co-about .fh5co-text {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+}
+
 /* Splash Hero Section - Split Layout */
 #splash-hero {
     display: flex;

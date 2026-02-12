@@ -22,6 +22,7 @@
         friction: 0.99,
         maxPullDistance: 100,
         gameStarted: false,
+        gameActive: false,
         animationId: null
     };
 
@@ -63,6 +64,24 @@
         game.canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
         game.canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
         game.canvas.addEventListener('touchend', handleTouchEnd, { passive: false });
+
+        // Play button
+        const playButton = document.getElementById('play-button');
+        if (playButton) {
+            playButton.addEventListener('click', startGame);
+        }
+
+        // Our Games button - smooth scroll
+        const ourGamesBtn = document.getElementById('our-games-btn');
+        if (ourGamesBtn) {
+            ourGamesBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                const target = document.getElementById('fh5co-featured');
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth' });
+                }
+            });
+        }
 
         // Initialize toucan
         resetToucan();
@@ -149,6 +168,8 @@
     }
 
     function handleStart(e) {
+        if (!game.gameActive) return;
+
         const pos = getEventPos(e);
 
         if (!game.isLaunched && isNearToucan(pos.x, pos.y)) {
@@ -223,6 +244,24 @@
         const dx = x - game.toucan.x;
         const dy = y - game.toucan.y;
         return Math.sqrt(dx * dx + dy * dy) < game.toucan.radius + 25;
+    }
+
+    function startGame() {
+        game.gameActive = true;
+
+        // Add game-active class to trigger slide animation
+        const splashHero = document.getElementById('splash-hero');
+        if (splashHero) splashHero.classList.add('game-active');
+
+        // Resize canvas and respawn targets after animation completes
+        setTimeout(function() {
+            resize();
+            // Clear and respawn targets in the new space
+            game.targets = [];
+            for (let i = 0; i < 4; i++) {
+                spawnTarget();
+            }
+        }, 850);
     }
 
     function update() {

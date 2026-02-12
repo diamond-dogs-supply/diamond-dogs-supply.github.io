@@ -11,17 +11,24 @@
     min-height: 100vh;
     min-height: 100dvh;
     background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    overflow: hidden;
 }
 
 /* Brand Section (Left on Desktop) */
 #splash-brand {
-    flex: 1;
+    flex: none;
+    width: 100%;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
     padding: 60px 40px;
     text-align: center;
+    transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#splash-hero.game-active #splash-brand {
+    width: 50%;
 }
 
 #splash-icon {
@@ -113,11 +120,18 @@
 
 /* Game Section (Right on Desktop) */
 #splash-game-wrapper {
-    flex: 1;
+    flex: none;
+    width: 0%;
     position: relative;
     min-height: 400px;
     background: rgba(0,0,0,0.2);
     border-left: 1px solid rgba(255,255,255,0.1);
+    overflow: hidden;
+    transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#splash-hero.game-active #splash-game-wrapper {
+    width: 50%;
 }
 
 #splash-game {
@@ -129,7 +143,31 @@
     touch-action: none;
 }
 
+/* Play Button in CTA */
+#play-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+#play-button .play-icon {
+    font-size: 14px;
+}
+
+#splash-hero.game-active #play-button {
+    display: none;
+}
+
 /* Game UI Overlay */
+#game-ui {
+    opacity: 0;
+    transition: opacity 0.5s ease 0.5s;
+}
+
+#splash-hero.game-active #game-ui {
+    opacity: 1;
+}
+
 #game-ui {
     position: absolute;
     top: 20px;
@@ -173,8 +211,15 @@
     }
 
     #splash-brand {
-        flex: none;
+        width: 100%;
         padding: 60px 30px 40px;
+        min-height: 100vh;
+        min-height: 100dvh;
+        transition: min-height 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    #splash-hero.game-active #splash-brand {
+        width: 100%;
         min-height: 50vh;
         min-height: 50dvh;
     }
@@ -189,18 +234,20 @@
         font-size: 42px;
     }
 
-    #splash-tagline {
-        font-size: 18px;
-        margin-bottom: 30px;
+    #splash-game-wrapper {
+        width: 100%;
+        height: 0;
+        min-height: 0;
+        border-left: none;
+        border-top: 1px solid rgba(255,255,255,0.1);
+        transition: height 0.8s cubic-bezier(0.4, 0, 0.2, 1), min-height 0.8s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
-    #splash-game-wrapper {
-        flex: none;
+    #splash-hero.game-active #splash-game-wrapper {
+        width: 100%;
         height: 50vh;
         height: 50dvh;
         min-height: 300px;
-        border-left: none;
-        border-top: 1px solid rgba(255,255,255,0.1);
     }
 }
 
@@ -218,6 +265,7 @@
     #splash-logo {
         font-size: 32px;
     }
+
 
     #splash-tagline {
         font-size: 16px;

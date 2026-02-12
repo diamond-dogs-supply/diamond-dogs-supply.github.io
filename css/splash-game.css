@@ -1,0 +1,335 @@
+/* Splash Hero Section - Split Layout */
+#splash-hero {
+    display: flex;
+    flex-direction: row;
+    min-height: 100vh;
+    min-height: 100dvh;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+}
+
+/* Brand Section (Left on Desktop) */
+#splash-brand {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 60px 40px;
+    text-align: center;
+}
+
+#splash-icon {
+    width: 120px;
+    height: 120px;
+    margin-bottom: 25px;
+    /* Invert black to white, add slight cool blue tint for neon white */
+    filter: invert(1) brightness(1.5) sepia(0.1) saturate(3) hue-rotate(180deg)
+            drop-shadow(0 0 2px #fff)
+            drop-shadow(0 0 5px rgba(200, 220, 255, 0.9))
+            drop-shadow(0 0 10px rgba(150, 200, 255, 0.7))
+            drop-shadow(0 0 20px rgba(100, 180, 255, 0.5))
+            drop-shadow(0 0 40px rgba(100, 150, 255, 0.3));
+    animation: neon-flicker 4s ease-in-out infinite;
+}
+
+@keyframes neon-flicker {
+    0%, 100% {
+        filter: invert(1) brightness(1.5) sepia(0.1) saturate(3) hue-rotate(180deg)
+                drop-shadow(0 0 2px #fff)
+                drop-shadow(0 0 5px rgba(200, 220, 255, 0.9))
+                drop-shadow(0 0 10px rgba(150, 200, 255, 0.7))
+                drop-shadow(0 0 20px rgba(100, 180, 255, 0.5))
+                drop-shadow(0 0 40px rgba(100, 150, 255, 0.3));
+    }
+    4%, 6% {
+        filter: invert(1) brightness(1) sepia(0.1) saturate(2) hue-rotate(180deg)
+                drop-shadow(0 0 1px #fff)
+                drop-shadow(0 0 3px rgba(150, 200, 255, 0.4))
+                drop-shadow(0 0 10px rgba(100, 150, 255, 0.2));
+    }
+    50% {
+        filter: invert(1) brightness(1.8) sepia(0.1) saturate(3) hue-rotate(180deg)
+                drop-shadow(0 0 3px #fff)
+                drop-shadow(0 0 8px rgba(220, 240, 255, 1))
+                drop-shadow(0 0 15px rgba(180, 220, 255, 0.9))
+                drop-shadow(0 0 30px rgba(120, 180, 255, 0.6))
+                drop-shadow(0 0 50px rgba(100, 150, 255, 0.4));
+    }
+    52%, 54% {
+        filter: invert(1) brightness(1.2) sepia(0.1) saturate(2) hue-rotate(180deg)
+                drop-shadow(0 0 2px #fff)
+                drop-shadow(0 0 5px rgba(180, 210, 255, 0.5))
+                drop-shadow(0 0 15px rgba(120, 170, 255, 0.3));
+    }
+}
+
+#splash-logo {
+    font-family: "Playfair Display", serif;
+    font-size: 56px;
+    font-weight: 700;
+    font-style: italic;
+    color: #fff;
+    text-shadow: 0 2px 20px rgba(0,0,0,0.3);
+    margin-bottom: 20px;
+    line-height: 1.1;
+}
+
+#splash-tagline {
+    font-family: "Merriweather", serif;
+    font-size: 20px;
+    color: rgba(255,255,255,0.7);
+    margin-bottom: 40px;
+    font-weight: 300;
+}
+
+#splash-cta {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+#splash-cta .btn {
+    padding: 12px 30px;
+    font-size: 14px;
+}
+
+#splash-cta .btn-outline {
+    border-color: rgba(255,255,255,0.5);
+    color: rgba(255,255,255,0.9);
+}
+
+#splash-cta .btn-outline:hover {
+    background: rgba(255,255,255,0.1);
+    border-color: #fff;
+    color: #fff;
+}
+
+/* Game Section (Right on Desktop) */
+#splash-game-wrapper {
+    flex: 1;
+    position: relative;
+    min-height: 400px;
+    background: rgba(0,0,0,0.2);
+    border-left: 1px solid rgba(255,255,255,0.1);
+}
+
+#splash-game {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    touch-action: none;
+}
+
+/* Game UI Overlay */
+#game-ui {
+    position: absolute;
+    top: 20px;
+    left: 0;
+    width: 100%;
+    pointer-events: none;
+    z-index: 10;
+}
+
+#splash-instructions {
+    font-family: "Merriweather", serif;
+    font-size: 14px;
+    color: rgba(255,255,255,0.7);
+    text-align: center;
+    transition: opacity 0.3s ease;
+    padding: 0 20px;
+}
+
+#splash-instructions.fade-out {
+    opacity: 0;
+}
+
+#splash-score {
+    font-family: "Merriweather", serif;
+    font-size: 18px;
+    color: #fb6e14;
+    text-align: center;
+    margin-top: 10px;
+}
+
+#score-value {
+    font-weight: 700;
+    font-size: 24px;
+}
+
+/* Mobile Layout - Stacked */
+@media screen and (max-width: 992px) {
+    #splash-hero {
+        flex-direction: column;
+        min-height: auto;
+    }
+
+    #splash-brand {
+        flex: none;
+        padding: 60px 30px 40px;
+        min-height: 50vh;
+        min-height: 50dvh;
+    }
+
+    #splash-icon {
+        width: 100px;
+        height: 100px;
+        margin-bottom: 20px;
+    }
+
+    #splash-logo {
+        font-size: 42px;
+    }
+
+    #splash-tagline {
+        font-size: 18px;
+        margin-bottom: 30px;
+    }
+
+    #splash-game-wrapper {
+        flex: none;
+        height: 50vh;
+        height: 50dvh;
+        min-height: 300px;
+        border-left: none;
+        border-top: 1px solid rgba(255,255,255,0.1);
+    }
+}
+
+@media screen and (max-width: 768px) {
+    #splash-brand {
+        padding: 40px 20px 30px;
+    }
+
+    #splash-icon {
+        width: 80px;
+        height: 80px;
+        margin-bottom: 15px;
+    }
+
+    #splash-logo {
+        font-size: 32px;
+    }
+
+    #splash-tagline {
+        font-size: 16px;
+        margin-bottom: 25px;
+    }
+
+    #splash-cta .btn {
+        padding: 10px 24px;
+        font-size: 12px;
+    }
+
+    #splash-instructions {
+        font-size: 13px;
+    }
+
+    #splash-score {
+        font-size: 16px;
+    }
+
+    #score-value {
+        font-size: 20px;
+    }
+}
+
+@media screen and (max-width: 480px) {
+    #splash-brand {
+        padding: 30px 15px 25px;
+        min-height: 45vh;
+    }
+
+    #splash-icon {
+        width: 60px;
+        height: 60px;
+        margin-bottom: 12px;
+    }
+
+    #splash-logo {
+        font-size: 26px;
+    }
+
+    #splash-tagline {
+        font-size: 14px;
+        margin-bottom: 20px;
+    }
+
+    #splash-cta {
+        gap: 10px;
+    }
+
+    #splash-cta .btn {
+        padding: 8px 18px;
+        font-size: 11px;
+    }
+
+    #splash-game-wrapper {
+        height: 55vh;
+        height: 55dvh;
+    }
+
+    #splash-instructions {
+        font-size: 12px;
+    }
+}
+
+/* Landscape mobile - side by side but smaller */
+@media screen and (max-height: 500px) and (orientation: landscape) {
+    #splash-hero {
+        flex-direction: row;
+        min-height: 100vh;
+    }
+
+    #splash-brand {
+        padding: 20px;
+        min-height: auto;
+    }
+
+    #splash-icon {
+        width: 50px;
+        height: 50px;
+        margin-bottom: 8px;
+    }
+
+    #splash-logo {
+        font-size: 28px;
+        margin-bottom: 10px;
+    }
+
+    #splash-tagline {
+        font-size: 14px;
+        margin-bottom: 15px;
+    }
+
+    #splash-cta .btn {
+        padding: 8px 16px;
+        font-size: 11px;
+    }
+
+    #splash-game-wrapper {
+        height: auto;
+        min-height: 100vh;
+        border-top: none;
+        border-left: 1px solid rgba(255,255,255,0.1);
+    }
+
+    #game-ui {
+        top: 10px;
+    }
+
+    #splash-instructions {
+        font-size: 11px;
+    }
+
+    #splash-score {
+        font-size: 14px;
+        margin-top: 5px;
+    }
+
+    #score-value {
+        font-size: 18px;
+    }
+}

@@ -4,19 +4,19 @@
     background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
 }
 
-/* Splash Hero Section - Split Layout */
+/* Splash Hero Section - Full Width Brand Focus */
 #splash-hero {
     display: flex;
-    flex-direction: row;
+    flex-direction: column;
     min-height: 100vh;
     min-height: 100dvh;
     background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
     overflow: hidden;
 }
 
-/* Brand Section (Left on Desktop) */
+/* Brand Section - Centered, Full Focus */
 #splash-brand {
-    flex: none;
+    flex: 1;
     width: 100%;
     display: flex;
     flex-direction: column;
@@ -24,17 +24,12 @@
     align-items: center;
     padding: 60px 40px;
     text-align: center;
-    transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-#splash-hero.game-active #splash-brand {
-    width: 50%;
 }
 
 #splash-icon {
-    width: 120px;
-    height: 120px;
-    margin-bottom: 25px;
+    width: 140px;
+    height: 140px;
+    margin-bottom: 30px;
     /* Invert black to white, add slight cool blue tint for neon white */
     filter: invert(1) brightness(1.5) sepia(0.1) saturate(3) hue-rotate(180deg)
             drop-shadow(0 0 2px #fff)
@@ -83,7 +78,7 @@
     font-style: italic;
     color: #fff;
     text-shadow: 0 2px 20px rgba(0,0,0,0.3);
-    margin-bottom: 20px;
+    margin-bottom: 15px;
     line-height: 1.1;
 }
 
@@ -91,7 +86,7 @@
     font-family: "Merriweather", serif;
     font-size: 20px;
     color: rgba(255,255,255,0.7);
-    margin-bottom: 40px;
+    margin-bottom: 35px;
     font-weight: 300;
 }
 
@@ -100,11 +95,19 @@
     gap: 15px;
     flex-wrap: wrap;
     justify-content: center;
+    margin-bottom: 40px;
 }
 
 #splash-cta .btn {
-    padding: 12px 30px;
-    font-size: 14px;
+    padding: 14px 32px;
+    font-size: 15px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+#splash-cta .btn i {
+    font-size: 18px;
 }
 
 #splash-cta .btn-outline {
@@ -118,110 +121,57 @@
     color: #fff;
 }
 
-/* Game Section (Right on Desktop) */
-#splash-game-wrapper {
-    flex: none;
-    width: 0%;
-    position: relative;
-    min-height: 400px;
-    background: rgba(0,0,0,0.2);
-    border-left: 1px solid rgba(255,255,255,0.1);
-    overflow: hidden;
-    transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-#splash-hero.game-active #splash-game-wrapper {
-    width: 50%;
-}
-
-#splash-game {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    touch-action: none;
-}
-
-/* Play Button in CTA */
-#play-button {
-    display: inline-flex;
+/* App Store Links */
+#app-store-links {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    justify-content: center;
     align-items: center;
-    gap: 8px;
 }
 
-#play-button .play-icon {
-    font-size: 14px;
+.app-store-badge {
+    display: block;
+    transition: transform 0.2s ease, opacity 0.2s ease;
+    opacity: 0.9;
 }
 
-#splash-hero.game-active #play-button {
-    display: none;
-}
-
-/* Game UI Overlay */
-#game-ui {
-    opacity: 0;
-    transition: opacity 0.5s ease 0.5s;
-}
-
-#splash-hero.game-active #game-ui {
+.app-store-badge:hover {
+    transform: scale(1.05);
     opacity: 1;
 }
 
-#game-ui {
-    position: absolute;
-    top: 20px;
-    left: 0;
-    width: 100%;
-    pointer-events: none;
-    z-index: 10;
+.app-store-badge img {
+    height: 50px;
+    width: auto;
 }
 
-#splash-instructions {
-    font-family: "Merriweather", serif;
-    font-size: 14px;
-    color: rgba(255,255,255,0.7);
-    text-align: center;
-    transition: opacity 0.3s ease;
-    padding: 0 20px;
-}
-
-#splash-instructions.fade-out {
-    opacity: 0;
-}
-
-#splash-score {
-    font-family: "Merriweather", serif;
-    font-size: 18px;
-    color: #fb6e14;
-    text-align: center;
-    margin-top: 10px;
-}
-
-#score-value {
-    font-weight: 700;
-    font-size: 24px;
-}
-
-/* Mobile Layout - Stacked */
+/* Tablet Layout */
 @media screen and (max-width: 992px) {
-    #splash-hero {
-        flex-direction: column;
-        min-height: auto;
-    }
-
     #splash-brand {
-        width: 100%;
-        padding: 60px 30px 40px;
-        min-height: 100vh;
-        min-height: 100dvh;
-        transition: min-height 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        padding: 50px 30px;
     }
 
-    #splash-hero.game-active #splash-brand {
-        width: 100%;
-        min-height: 50vh;
-        min-height: 50dvh;
+    #splash-icon {
+        width: 120px;
+        height: 120px;
+        margin-bottom: 25px;
+    }
+
+    #splash-logo {
+        font-size: 48px;
+    }
+
+    #splash-tagline {
+        font-size: 18px;
+        margin-bottom: 30px;
+    }
+}
+
+/* Mobile Layout */
+@media screen and (max-width: 768px) {
+    #splash-brand {
+        padding: 40px 20px;
     }
 
     #splash-icon {
@@ -231,29 +181,43 @@
     }
 
     #splash-logo {
-        font-size: 42px;
+        font-size: 36px;
+        margin-bottom: 12px;
     }
 
-    #splash-game-wrapper {
-        width: 100%;
-        height: 0;
-        min-height: 0;
-        border-left: none;
-        border-top: 1px solid rgba(255,255,255,0.1);
-        transition: height 0.8s cubic-bezier(0.4, 0, 0.2, 1), min-height 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    #splash-tagline {
+        font-size: 16px;
+        margin-bottom: 25px;
+        padding: 0 10px;
     }
 
-    #splash-hero.game-active #splash-game-wrapper {
-        width: 100%;
-        height: 50vh;
-        height: 50dvh;
-        min-height: 300px;
+    #splash-cta {
+        margin-bottom: 30px;
+    }
+
+    #splash-cta .btn {
+        padding: 12px 24px;
+        font-size: 14px;
+    }
+
+    #splash-cta .btn i {
+        font-size: 16px;
+    }
+
+    #app-store-links {
+        gap: 15px;
+    }
+
+    .app-store-badge img {
+        height: 44px;
     }
 }
 
-@media screen and (max-width: 768px) {
+/* Small Mobile Layout */
+@media screen and (max-width: 480px) {
     #splash-brand {
-        padding: 40px 20px 30px;
+        padding: 30px 15px;
+        justify-content: center;
     }
 
     #splash-icon {
@@ -263,47 +227,8 @@
     }
 
     #splash-logo {
-        font-size: 32px;
-    }
-
-
-    #splash-tagline {
-        font-size: 16px;
-        margin-bottom: 25px;
-    }
-
-    #splash-cta .btn {
-        padding: 10px 24px;
-        font-size: 12px;
-    }
-
-    #splash-instructions {
-        font-size: 13px;
-    }
-
-    #splash-score {
-        font-size: 16px;
-    }
-
-    #score-value {
-        font-size: 20px;
-    }
-}
-
-@media screen and (max-width: 480px) {
-    #splash-brand {
-        padding: 30px 15px 25px;
-        min-height: 45vh;
-    }
-
-    #splash-icon {
-        width: 60px;
-        height: 60px;
-        margin-bottom: 12px;
-    }
-
-    #splash-logo {
-        font-size: 26px;
+        font-size: 28px;
+        margin-bottom: 10px;
     }
 
     #splash-tagline {
@@ -312,78 +237,289 @@
     }
 
     #splash-cta {
-        gap: 10px;
+        flex-direction: column;
+        width: 100%;
+        max-width: 280px;
+        gap: 12px;
+        margin-bottom: 25px;
     }
 
     #splash-cta .btn {
-        padding: 8px 18px;
-        font-size: 11px;
+        width: 100%;
+        padding: 14px 20px;
+        font-size: 14px;
+        justify-content: center;
     }
 
-    #splash-game-wrapper {
-        height: 55vh;
-        height: 55dvh;
+    #app-store-links {
+        flex-direction: column;
+        gap: 12px;
     }
 
-    #splash-instructions {
-        font-size: 12px;
+    .app-store-badge img {
+        height: 48px;
     }
 }
 
-/* Landscape mobile - side by side but smaller */
+/* ==================== */
+/* Product Cards Section */
+/* ==================== */
+
+.product-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+.product-card {
+    display: flex;
+    flex-direction: row;
+    background: #fff;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.product-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 50px rgba(0, 0, 0, 0.2);
+}
+
+.product-card:nth-child(even) {
+    flex-direction: row-reverse;
+}
+
+.product-image {
+    flex: 0 0 45%;
+    min-height: 280px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    padding: 20px;
+}
+
+.product-image img {
+    max-width: 100%;
+    max-height: 240px;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    border-radius: 8px;
+}
+
+.product-info {
+    flex: 1;
+    padding: 30px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.product-info h3 {
+    font-family: "Playfair Display", serif;
+    font-size: 28px;
+    font-weight: 700;
+    color: #1a1a2e;
+    margin: 0 0 8px 0;
+    line-height: 1.2;
+}
+
+.product-tagline {
+    font-family: "Merriweather", serif;
+    font-size: 14px;
+    color: #fb6e14;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 15px !important;
+}
+
+.product-info p {
+    font-family: "Merriweather", serif;
+    font-size: 15px;
+    line-height: 1.7;
+    color: #555;
+    margin-bottom: 20px;
+}
+
+.product-actions {
+    margin-bottom: 15px;
+}
+
+.product-actions .btn {
+    padding: 12px 28px;
+    font-size: 14px;
+}
+
+.product-badges {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.product-badges .app-badge {
+    display: block;
+    transition: transform 0.2s ease, opacity 0.2s ease;
+    opacity: 0.9;
+}
+
+.product-badges .app-badge:hover {
+    transform: scale(1.05);
+    opacity: 1;
+}
+
+.product-badges .app-badge img {
+    height: 40px;
+    width: auto;
+}
+
+/* Featured section heading override */
+#fh5co-featured .fh5co-heading .heading {
+    color: #fff;
+}
+
+#fh5co-featured .fh5co-heading .sub-heading {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+/* Tablet Layout for Product Cards */
+@media screen and (max-width: 768px) {
+    .product-cards {
+        gap: 30px;
+        padding: 0 15px;
+    }
+
+    .product-card,
+    .product-card:nth-child(even) {
+        flex-direction: column;
+    }
+
+    .product-image {
+        flex: none;
+        min-height: 200px;
+        padding: 25px;
+    }
+
+    .product-image img {
+        max-height: 180px;
+    }
+
+    .product-info {
+        padding: 25px;
+    }
+
+    .product-info h3 {
+        font-size: 24px;
+    }
+
+    .product-tagline {
+        font-size: 12px;
+    }
+
+    .product-info p {
+        font-size: 14px;
+    }
+
+    .product-badges .app-badge img {
+        height: 36px;
+    }
+}
+
+/* Small Mobile Layout for Product Cards */
+@media screen and (max-width: 480px) {
+    .product-cards {
+        gap: 25px;
+        padding: 0 10px;
+    }
+
+    .product-card {
+        border-radius: 12px;
+    }
+
+    .product-image {
+        min-height: 180px;
+        padding: 20px;
+    }
+
+    .product-image img {
+        max-height: 150px;
+    }
+
+    .product-info {
+        padding: 20px;
+    }
+
+    .product-info h3 {
+        font-size: 20px;
+    }
+
+    .product-tagline {
+        font-size: 11px;
+        margin-bottom: 12px !important;
+    }
+
+    .product-info p {
+        font-size: 13px;
+        line-height: 1.6;
+        margin-bottom: 15px;
+    }
+
+    .product-badges {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .product-badges .app-badge img {
+        height: 42px;
+    }
+}
+
+/* Landscape mobile */
 @media screen and (max-height: 500px) and (orientation: landscape) {
     #splash-hero {
-        flex-direction: row;
         min-height: 100vh;
     }
 
     #splash-brand {
-        padding: 20px;
-        min-height: auto;
+        padding: 20px 40px;
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 20px;
     }
 
     #splash-icon {
-        width: 50px;
-        height: 50px;
-        margin-bottom: 8px;
+        width: 60px;
+        height: 60px;
+        margin-bottom: 0;
     }
 
     #splash-logo {
-        font-size: 28px;
-        margin-bottom: 10px;
+        font-size: 32px;
+        margin-bottom: 5px;
     }
 
     #splash-tagline {
         font-size: 14px;
         margin-bottom: 15px;
+        width: 100%;
+    }
+
+    #splash-cta {
+        margin-bottom: 15px;
     }
 
     #splash-cta .btn {
-        padding: 8px 16px;
-        font-size: 11px;
+        padding: 10px 20px;
+        font-size: 13px;
     }
 
-    #splash-game-wrapper {
-        height: auto;
-        min-height: 100vh;
-        border-top: none;
-        border-left: 1px solid rgba(255,255,255,0.1);
-    }
-
-    #game-ui {
-        top: 10px;
-    }
-
-    #splash-instructions {
-        font-size: 11px;
-    }
-
-    #splash-score {
-        font-size: 14px;
-        margin-top: 5px;
-    }
-
-    #score-value {
-        font-size: 18px;
+    .app-store-badge img {
+        height: 40px;
     }
 }

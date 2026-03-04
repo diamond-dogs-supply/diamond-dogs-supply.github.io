@@ -51,18 +51,20 @@
 		<div id="splash-brand">
 			<img src="images/DDSC_Icon1.svg" alt="Diamond Dawg Games" id="splash-icon">
 			<div id="splash-logo">Diamond Dawg Games</div>
-						<div id="splash-cta">
-				<button id="play-button" class="btn btn-primary">
-					<span class="play-icon">▶</span> Play
-				</button>
-				<a href="#fh5co-featured" class="btn btn-primary btn-outline" id="our-games-btn">Our Games</a>
+			<div id="splash-tagline">Indie games that bring people together</div>
+			<div id="splash-cta">
+				<a href="#fh5co-featured" class="btn btn-primary" id="our-games-btn">Our Games</a>
+				<a href="https://www.instagram.com/diamonddawg.games" target="_blank" rel="noopener" class="btn btn-primary btn-outline" id="instagram-btn">
+					<i class="icon-instagram"></i> Follow Us
+				</a>
 			</div>
-		</div>
-		<div id="splash-game-wrapper">
-			<canvas id="splash-game"></canvas>
-			<div id="game-ui">
-				<div id="splash-instructions">Drag & release the toucan!</div>
-				<div id="splash-score">Score: <span id="score-value">0</span></div>
+			<div id="app-store-links">
+				<a href="#" class="app-store-badge" id="app-store-ios" target="_blank" rel="noopener">
+					<img src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg" alt="Download on the App Store">
+				</a>
+				<a href="#" class="app-store-badge" id="app-store-android" target="_blank" rel="noopener">
+					<img src="https://upload.wikimedia.org/wikipedia/commons/7/78/Google_Play_Store_badge_EN.svg" alt="Get it on Google Play">
+				</a>
 			</div>
 		</div>
 	</div>
@@ -98,59 +100,53 @@
 
 		<div id="fh5co-featured" data-section="features">
 			<div class="container">
-				<div class="row">
-					<div class="fh5co-grid">
-						<div class="fh5co-v-half to-animate-2">
-							<div class="fh5co-v-col-2 fh5co-bg-img" style="background-image: url(images/toucan_home.png); background-size: cover;"></div>
-							<div class="fh5co-v-col-2 fh5co-text fh5co-special-1 arrow-left">
-								<h2>Toucan</h2>
-								<p>Party games app with multiple modes: drinking games, charades, deep discussions, and intimate conversations for two.</p>
-							</div>
-						</div>
-						<div class="fh5co-v-half">
-							<div class="fh5co-h-row-2 to-animate-2">
-								<div class="fh5co-v-col-2 fh5co-bg-img" style="background-image: url(images/arrowfall_preview.png); background-size: contain; background-repeat: no-repeat; background-position: center; background-color: #1a1a2e;"></div>
-								<div class="fh5co-v-col-2 fh5co-text arrow-left">
-									<h2>Arrowfall</h2>
-									<p>A narrative tower defense across the Fractured Lands. Reclaim the realm through Grasslands, Volcanic Reaches, Icy Tundra, and Shadowland.</p>
-								</div>
-							</div>
-							<div class="fh5co-h-row-2 fh5co-reversed to-animate-2">
-								<div class="fh5co-v-col-2 fh5co-bg-img" style="background-image: url(images/it_takes_tou.png); background-size: contain; background-repeat: no-repeat; background-position: center; background-color: #f5f5f5;"></div>
-								<div class="fh5co-v-col-2 fh5co-text arrow-right">
-									<h2>It Takes Tou</h2>
-									<p>A 2-player conversation game with progressive intimacy stages to help you connect deeper.</p>
-								</div>
-							</div>
-						</div>
-
-<!--						<div class="fh5co-v-half">-->
-<!--							<div class="fh5co-h-row-2 fh5co-reversed to-animate-2">-->
-<!--								<div class="fh5co-v-col-2 fh5co-bg-img" style="background-color: #2d2d44; display: flex; align-items: center; justify-content: center;"><img src="images/it_takes_tou.png" alt="UI/UX Design" style="max-width: 60%; max-height: 60%;"></div>-->
-<!--								<div class="fh5co-v-col-2 fh5co-text arrow-right">-->
-<!--									<h2>UI/UX Design</h2>-->
-<!--									<p>User-centered design that balances aesthetics with functionality.</p>-->
-<!--								</div>-->
-<!--							</div>-->
-<!--							<div class="fh5co-h-row-2 to-animate-2">-->
-<!--								<div class="fh5co-v-col-2 fh5co-bg-img" style="background-color: #1a1a2e; display: flex; align-items: center; justify-content: center;"><img src="images/big_toucan.png" alt="Game Development" style="max-width: 80%; max-height: 80%;"></div>-->
-<!--								<div class="fh5co-v-col-2 fh5co-text arrow-left">-->
-<!--									<h2>Game Development</h2>-->
-<!--									<p>From casual mobile games to immersive experiences, we bring ideas to life.</p>-->
-<!--								</div>-->
-<!--							</div>-->
-<!--						</div>-->
-<!--						<div class="fh5co-v-half to-animate-2">-->
-<!--							<div class="fh5co-v-col-2 fh5co-bg-img" style="background-image: url(images/toucan_home.png); background-size: 50%; background-repeat: no-repeat; background-position: center; background-color: #fff;"></div>-->
-<!--							<div class="fh5co-v-col-2 fh5co-text fh5co-special-1 arrow-left">-->
-<!--								<h2>Toucan Mobile</h2>-->
-<!--								<p>The new party game!</p>-->
-<!--							</div>-->
-<!--						</div>-->
-
+				<div class="row text-center fh5co-heading row-padded">
+					<div class="col-md-8 col-md-offset-2">
+						<h2 class="heading to-animate">Our Games</h2>
+						<p class="sub-heading to-animate">Games that bring people together</p>
 					</div>
 				</div>
-
+				<div class="product-cards">
+					<div class="product-card to-animate-2">
+						<div class="product-image">
+							<img src="images/toucan_home.png" alt="Toucan Party Pack">
+						</div>
+						<div class="product-info">
+							<h3>Toucan Party Pack</h3>
+							<p class="product-tagline">The ultimate party games collection</p>
+							<p>Multiple game modes for every occasion: drinking games, charades, deep discussions, and intimate conversations for two. Perfect for game nights, parties, and getting closer with friends.</p>
+							<div class="product-badges">
+								<a href="#" class="app-badge" target="_blank" rel="noopener">
+									<img src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg" alt="Download on the App Store">
+								</a>
+								<a href="#" class="app-badge" target="_blank" rel="noopener">
+									<img src="https://upload.wikimedia.org/wikipedia/commons/7/78/Google_Play_Store_badge_EN.svg" alt="Get it on Google Play">
+								</a>
+							</div>
+						</div>
+					</div>
+					<div class="product-card to-animate-2">
+						<div class="product-image">
+							<img src="images/arrowfall_preview.png" alt="Arrowfall: The Fractured Lands">
+						</div>
+						<div class="product-info">
+							<h3>Arrowfall: The Fractured Lands</h3>
+							<p class="product-tagline">A narrative tower defense adventure</p>
+							<p>Reclaim the realm across four unique biomes: Grasslands, Volcanic Reaches, Icy Tundra, and Shadowland. Strategic gameplay meets immersive storytelling.</p>
+							<div class="product-actions">
+								<a href="arrowfall/" class="btn btn-primary">Play in Browser</a>
+							</div>
+							<div class="product-badges">
+								<a href="#" class="app-badge" target="_blank" rel="noopener">
+									<img src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg" alt="Download on the App Store">
+								</a>
+								<a href="#" class="app-badge" target="_blank" rel="noopener">
+									<img src="https://upload.wikimedia.org/wikipedia/commons/7/78/Google_Play_Store_badge_EN.svg" alt="Get it on Google Play">
+								</a>
+							</div>
+						</div>
+					</div>
+				</div>
 			</div>
 		</div>
 
@@ -553,21 +549,19 @@
 
 	<div id="fh5co-footer">
 		<div class="container">
+			<div class="row">
+				<div class="col-md-12 text-center">
+					<ul class="fh5co-social">
+						<li class="to-animate-2"><a href="https://www.instagram.com/diamonddawg.games" target="_blank" rel="noopener"><i class="icon-instagram"></i></a></li>
+					</ul>
+				</div>
+			</div>
 			<div class="row row-padded">
 				<div class="col-md-12 text-center">
 					<p class="to-animate">&copy; 2025 Diamond Dawg Games <br> Designed by <a href="http://kelsonflint.com" target="_blank">Kelson Flint</a> </p>
 					<p class="text-center to-animate"><a href="privacy" style="color: rgba(255,255,255,0.5);">Privacy Policy</a> &nbsp;|&nbsp; <a href="#" class="js-gotop">Go To Top</a></p>
 				</div>
 			</div>
-			<!-- <div class="row">
-				<div class="col-md-12 text-center">
-					<ul class="fh5co-social">
-						<li class="to-animate-2"><a href="#"><i class="icon-facebook"></i></a></li>
-						<li class="to-animate-2"><a href="#"><i class="icon-twitter"></i></a></li>
-						<li class="to-animate-2"><a href="#"><i class="icon-instagram"></i></a></li>
-					</ul>
-				</div>
-			</div> -->
 		</div>
 	</div>
 
@@ -599,8 +593,6 @@
 	</script>
 	<!-- Main JS -->
 	<script src="js/main.js"></script>
-	<!-- Splash Game -->
-	<script src="js/splash-game.js"></script>
 
 	</body>
 </html>

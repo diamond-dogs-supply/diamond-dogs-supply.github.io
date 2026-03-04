@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Arrowfall: The Fractured Lands | Play Now</title>
+    <meta name="description" content="Play Arrowfall: The Fractured Lands - A narrative tower defense adventure. Reclaim the realm across four unique biomes.">
+    <link rel="shortcut icon" href="../favicon.ico">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #1B5E20;
+        }
+
+        /* Ensure canvas fills the viewport */
+        canvas {
+            display: block;
+            width: 100% !important;
+            height: 100% !important;
+            position: fixed;
+            top: 0;
+            left: 0;
+        }
+
+        #loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background-color: #1B5E20;
+            color: white;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            z-index: 1000;
+            transition: opacity 0.3s ease;
+        }
+
+        #loading.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        #loading h1 {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        #loading p {
+            font-size: 1rem;
+            opacity: 0.8;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 1rem;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div id="loading">
+        <div class="spinner"></div>
+        <h1>Arrowfall</h1>
+        <p>Loading game...</p>
+    </div>
+
+    <script>
+        // Hide loading screen once canvas is created and rendering
+        function checkForCanvas() {
+            const canvas = document.querySelector('canvas');
+            if (canvas) {
+                // Canvas exists, wait a bit for first render then hide loading
+                setTimeout(function() {
+                    document.getElementById('loading').classList.add('hidden');
+                }, 500);
+            } else {
+                // Keep checking
+                setTimeout(checkForCanvas, 100);
+            }
+        }
+
+        window.addEventListener('load', function() {
+            checkForCanvas();
+        });
+    </script>
+    <script src="towers.js"></script>
+</body>
+</html>

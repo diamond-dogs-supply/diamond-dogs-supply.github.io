@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Playbook | Diamond Dawg Games</title>
+	<meta name="description" content="Draw 7v7 flag football plays with preset routes, edit them point by point, then print them or share a link with your team.">
+	<meta name="theme-color" content="#0f1a14">
+	<link rel="icon" type="image/svg+xml" href="../images/DDSC_Icon1.svg">
+	<link rel="stylesheet" href="css/playbook.css">
+</head>
+<body>
+	<header class="topbar">
+		<a class="brand" href="../">&larr; Diamond Dawg Games</a>
+		<label class="name-field">
+			<span class="sr">Play name</span>
+			<input id="play-name" type="text" maxlength="60" placeholder="Play name" autocomplete="off">
+		</label>
+		<span id="save-status" class="save-status" role="status"></span>
+		<nav class="actions" aria-label="Play actions">
+			<button id="btn-new" type="button" class="edit-only">New</button>
+			<button id="btn-undo" type="button" class="edit-only" title="Undo (Ctrl/Cmd+Z)">Undo</button>
+			<button id="btn-redo" type="button" class="edit-only" title="Redo (Ctrl/Cmd+Shift+Z)">Redo</button>
+			<button id="btn-mirror" type="button" class="edit-only" title="Flip the whole play left to right">Mirror</button>
+			<span class="sep edit-only"></span>
+			<button id="btn-share" type="button" class="primary">Share link</button>
+			<button id="btn-print" type="button" title="Print or save as PDF">Print</button>
+			<button id="btn-png" type="button">PNG</button>
+			<button id="btn-save" type="button" title="Download this play as a .play.json file">Save file</button>
+			<button id="btn-open" type="button" class="edit-only" title="Open a .play.json or .playbook.json file">Open file</button>
+			<input id="file-input" type="file" accept=".json,application/json" hidden>
+		</nav>
+	</header>
+
+	<div id="banner" class="banner" hidden></div>
+
+	<main class="layout">
+		<section class="stage" aria-label="Field">
+			<div class="stage-bar">
+				<div class="seg" role="group" aria-label="Show">
+					<button type="button" data-show="all" class="on">Both</button>
+					<button type="button" data-show="off">Offense</button>
+					<button type="button" data-show="def">Defense</button>
+				</div>
+				<label class="check edit-only"><input id="snap" type="checkbox" checked> Snap to half yard</label>
+				<span id="counts" class="counts"></span>
+			</div>
+			<svg id="field" xmlns="http://www.w3.org/2000/svg" role="application" aria-label="Play field. Select a player, then choose a route."></svg>
+			<p id="hint" class="hint"></p>
+		</section>
+
+		<aside class="panel">
+			<section id="inspector" class="card edit-only" aria-live="polite"></section>
+
+			<details class="card edit-only" open>
+				<summary>Formations &amp; players</summary>
+				<div class="card-body">
+					<div class="row">
+						<label class="grow">Offense formation<select id="off-formation"></select></label>
+						<button id="apply-off" type="button">Set</button>
+					</div>
+					<div class="row">
+						<label class="grow">Defense look<select id="def-formation"></select></label>
+						<button id="apply-def" type="button">Set</button>
+					</div>
+					<div class="row">
+						<button id="add-off" type="button">+ Offense player</button>
+						<button id="add-def" type="button">+ Defense player</button>
+					</div>
+					<p class="muted">Select a player on the field to rename or remove them. Setting a formation keeps each player's route when the labels match.</p>
+				</div>
+			</details>
+
+			<details class="card edit-only">
+				<summary>Field size</summary>
+				<div class="card-body">
+					<div class="row three">
+						<label>Width (yd)<input id="field-width" type="number" inputmode="numeric" step="1"></label>
+						<label>Length (yd)<input id="field-length" type="number" inputmode="numeric" step="1"></label>
+						<label>Backfield (yd)<input id="field-backfield" type="number" inputmode="numeric" step="1"></label>
+					</div>
+					<p class="muted">Length is the total shown, and backfield is how much of it sits behind the line of scrimmage. Players stay put but are pulled inside the lines if the field gets smaller.</p>
+				</div>
+			</details>
+
+			<details class="card edit-only" open>
+				<summary>Notes</summary>
+				<div class="card-body">
+					<label>Notes (printed under the diagram)<textarea id="play-notes" rows="3" maxlength="800"></textarea></label>
+					<label>Tags (comma separated)<input id="play-tags" type="text" autocomplete="off"></label>
+				</div>
+			</details>
+
+			<details class="card edit-only" open>
+				<summary>My plays</summary>
+				<div class="card-body">
+					<ul id="plays-list" class="plays"></ul>
+					<div class="row">
+						<button id="btn-new2" type="button">New play</button>
+						<button id="btn-print-all" type="button">Print playbook</button>
+						<button id="btn-export-all" type="button">Export playbook</button>
+					</div>
+					<p class="muted">Plays are saved automatically in this browser. Use Save file or Share link to send one to a teammate.</p>
+				</div>
+			</details>
+		</aside>
+	</main>
+
+	<dialog id="share-dialog">
+		<form method="dialog">
+			<h2>Share this play</h2>
+			<p>Anyone with the link can open the play and make their own editable copy. The play is stored inside the link, so nothing is uploaded.</p>
+			<input id="share-url" type="text" readonly aria-label="Share link">
+			<p id="share-meta" class="muted"></p>
+			<div class="row">
+				<button id="share-copy" type="button" class="primary">Copy link</button>
+				<button id="share-native" type="button" hidden>Share&hellip;</button>
+				<a id="share-mail" class="btn" href="#">Email it</a>
+				<button value="close">Close</button>
+			</div>
+		</form>
+	</dialog>
+
+	<div id="toast" class="toast" role="status" hidden></div>
+	<div id="print-root" aria-hidden="true"></div>
+
+	<noscript><p class="banner">The playbook needs JavaScript to run.</p></noscript>
+	<script type="module" src="js/app.js"></script>
+</body>
+</html>

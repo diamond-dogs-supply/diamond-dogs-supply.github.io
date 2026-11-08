@@ -2,12 +2,13 @@
 
 import { Editor } from './state.js';
 import { FIELD_LIMITS, ROUTE_COLORS, clonePlay, newPlay, uid, validatePlay } from './model.js';
-import { GROUPS, PRESETS, PRESET_MAP } from './routes.js';
-import { DEFENSE_FORMATIONS, OFFENSE_FORMATIONS } from './formations.js';
+import { GROUPS, PRESETS, PRESET_MAP, ZONE_MAP, ZONE_PRESETS } from './routes.js';
+import { COVERAGE_ZONES, DEFENSE_FORMATIONS, OFFENSE_FORMATIONS } from './formations.js';
 import { esc, geom, playToSVG, svgInner } from './render.js';
 import { loadLibrary, saveLibrary } from './storage.js';
 import { codeFromHash, decodePlay, encodePlay } from './share.js';
 import { downloadBlob, downloadText, slug, svgToPngBlob } from './export.js';
+import { initSheets } from './sheets-ui.js';
 
 const $ = (id) => document.getElementById(id);
 const svg = $('field');
@@ -143,6 +144,14 @@ svg.addEventListener('pointerdown', (e) => {
 			return;
 		}
 	}
+	const zr = t.closest && t.closest('[data-zr]');
+	if (zr) {
+		ed.beginGesture();
+		drag = { type: 'zr', rid: zr.dataset.rid, axis: zr.dataset.zr };
+		svg.setPointerCapture(e.pointerId);
+		e.preventDefault();
+		return;
+	}
 	const pt = t.closest && t.closest('[data-pt]');
 	if (pt) {
 		const rid = pt.dataset.rid;
@@ -168,7 +177,17 @@ svg.addEventListener('pointerdown', (e) => {
 	const rt = t.closest && t.closest('[data-rid]');
 	if (rt) {
 		const r = ed.routeById(rt.dataset.rid);
-		if (r) ed.select(r.playerId, r.kind);
+		if (r) {
+			ed.select(r.playerId, r.kind);
+			if (r.kind === 'zone' && r.zone) {
+				// grab the ellipse itself to slide it around
+				const c = ed.absPoints(r)[1];
+				ed.beginGesture();
+				drag = { type: 'zone', rid: r.id, gx: pos.x - c.x, gy: pos.y - c.y };
+				svg.setPointerCapture(e.pointerId);
+				e.preventDefault();
+			}
+		}
 		return;
 	}
 	const sel = ed.selectedRoute();
@@ -184,6 +203,8 @@ svg.addEventListener('pointermove', (e) => {
 	const pos = toField(e);
 	if (!pos) return;
 	if (drag.type === 'player') ed.movePlayer(drag.id, pos.x - drag.gx, pos.y - drag.gy);
+	else if (drag.type === 'zr') ed.dragZoneEdge(drag.rid, drag.axis, pos.x, pos.y);
+	else if (drag.type === 'zone') ed.movePoint(drag.rid, 0, pos.x - drag.gx, pos.y - drag.gy);
 	else ed.movePoint(drag.rid, drag.idx, pos.x, pos.y);
 });
 
@@ -232,7 +253,8 @@ document.addEventListener('keydown', (e) => {
 	}
 	if (e.key === 'Delete' || e.key === 'Backspace') {
 		const r = ed.selectedRoute();
-		if (r && ed.ui.sel.point !== null) ed.deletePoint(r.id, ed.ui.sel.point);
+		if (r && r.kind === 'zone' && ed.ui.sel.point !== null) ed.removeRoute(r.id);
+		else if (r && ed.ui.sel.point !== null) ed.deletePoint(r.id, ed.ui.sel.point);
 		else if (ed.ui.sel.playerId) ed.removePlayer(ed.ui.sel.playerId);
 		else return;
 		e.preventDefault();
@@ -268,6 +290,33 @@ function slider(id, label, value, max) {
 	return `<label class="slider">${label}<input type="range" id="${id}" min="0" max="${max}" step="0.5" value="${value}"><output id="${id}-out">${value} yd</output></label>`;
 }
 
+function zoneChips(route) {
+	let h = '<div class="preset-group">Zone coverage</div><div class="chips">';
+	for (const z of ZONE_PRESETS) {
+		h += `<button type="button" class="chip${route && route.preset === z.id ? ' on' : ''}" data-act="preset" data-id="${z.id}">${esc(z.name)}</button>`;
+	}
+	h += `<button type="button" class="chip${route && route.preset === 'custom' ? ' on' : ''}" data-act="preset" data-id="custom">&#9998; Custom zone</button></div>`;
+	return h;
+}
+
+function zoneControls(route) {
+	const maxW = Math.min(60, ed.play.field.width);
+	const w = Math.round(route.zone.rx * 20) / 10;
+	const hgt = Math.round(route.zone.ry * 20) / 10;
+	const sl = (id, label, v, max) => `<label class="slider">${label}<input type="range" id="${id}" min="3" max="${max}" step="0.5" value="${v}"><output id="${id}-out">${v} yd</output></label>`;
+	let h = '<div class="ctl">';
+	h += sl('z-w', 'Width', w, maxW) + sl('z-h', 'Height', hgt, 40);
+	h += `<label>Label<input id="z-label" type="text" maxlength="10" value="${esc(route.label)}" autocomplete="off" placeholder="e.g. Hook"></label>`;
+	h += `<p class="muted">${route.edited ? 'Edited zone.' : `${esc((ZONE_MAP[route.preset] || {}).name || 'Zone')} preset.`} Drag the ellipse to move it and the square handles to resize it.</p>`;
+	h += `<div class="opts">
+		<label><input type="checkbox" id="r-dash" ${route.dash ? 'checked' : ''}> Dashed line</label>
+		<label>Line end <select id="r-end">${['none', 'arrow', 'dot'].map((v) => `<option value="${v}" ${route.end === v ? 'selected' : ''}>${{ none: 'None', arrow: 'Arrow', dot: 'Dot' }[v]}</option>`).join('')}</select></label>
+	</div>`;
+	h += `<div class="swatches" aria-label="Zone color">${ROUTE_COLORS.map((c) => `<button type="button" class="swatch${c ? '' : ' auto'}${route.color === c ? ' on' : ''}" data-act="color" data-color="${c || ''}" title="${c || 'Automatic'}" ${c ? `style="background:${c}"` : ''}></button>`).join('')}</div>`;
+	h += '<div class="btns"><button type="button" data-act="reset" ' + (route.preset !== 'custom' && route.edited ? '' : 'disabled') + '>Reset to preset</button><button type="button" data-act="remove-route" class="danger">Remove zone</button></div>';
+	return h + '</div>';
+}
+
 function inspectorHTML() {
 	const p = ed.player(ed.ui.sel.playerId);
 	if (!p) {
@@ -278,8 +327,13 @@ function inspectorHTML() {
 	let h = `<div class="insp-head"><span class="badge ${p.side}">${p.side === 'O' ? 'Offense' : 'Defense'}</span>
 		<label class="inline">Label <input id="p-label" type="text" maxlength="4" value="${esc(p.label)}" autocomplete="off"></label>
 		<button type="button" class="danger" data-act="remove-player">Remove</button></div>`;
-	h += `<div class="seg wide"><button type="button" data-act="kind" data-kind="route" class="${kind === 'route' ? 'on' : ''}">Route</button>
-		<button type="button" data-act="kind" data-kind="motion" class="${kind === 'motion' ? 'on' : ''}">Motion (before snap)</button></div>`;
+	const tabs = p.side === 'D' ? [['zone', 'Zone'], ['route', 'Path (man / blitz)']] : [['route', 'Route'], ['motion', 'Motion (before snap)']];
+	h += `<div class="seg wide">${tabs.map(([k, name]) => `<button type="button" data-act="kind" data-kind="${k}" class="${kind === k ? 'on' : ''}">${name}</button>`).join('')}</div>`;
+	if (kind === 'zone') {
+		h += zoneChips(route);
+		if (!route) return h + '<p class="muted" style="margin-top:12px">No zone yet. Pick a coverage above, or use Draw zones for this look under Formations &amp; players to do the whole defense at once.</p>';
+		return h + zoneControls(route);
+	}
 	h += presetChips(route);
 	if (!route) {
 		h += `<p class="muted" style="margin-top:12px">${kind === 'motion' ? 'No motion yet.' : 'No route yet.'} Pick one above, then drag its dots to reshape it.</p>`;
@@ -348,13 +402,18 @@ inspector.addEventListener('input', (e) => {
 	if (readOnly) return;
 	const id = e.target.id;
 	const route = ed.selectedRoute();
-	if (id !== 'p-label' && id !== 'r-depth' && id !== 'r-length') return;
+	if (!['p-label', 'r-depth', 'r-length', 'z-w', 'z-h', 'z-label'].includes(id)) return;
 	if (!liveOpen) {
 		ed.beginGesture();
 		liveOpen = true;
 	}
 	if (id === 'p-label') ed.setLabel(ed.ui.sel.playerId, e.target.value);
-	else if (route) {
+	else if (route && id === 'z-label') ed.updateRouteLive(route.id, { label: e.target.value });
+	else if (route && (id === 'z-w' || id === 'z-h')) {
+		ed.updateRouteLive(route.id, { [id === 'z-w' ? 'rx' : 'ry']: Number(e.target.value) / 2 });
+		const out = $(id + '-out');
+		if (out) out.textContent = `${e.target.value} yd`;
+	} else if (route) {
 		const key = id === 'r-depth' ? 'depth' : 'length';
 		ed.updateRouteLive(route.id, { [key]: Number(e.target.value) });
 		const out = $(id + '-out');
@@ -362,7 +421,7 @@ inspector.addEventListener('input', (e) => {
 	}
 });
 inspector.addEventListener('change', (e) => {
-	if (liveOpen && ['p-label', 'r-depth', 'r-length'].includes(e.target.id)) {
+	if (liveOpen && ['p-label', 'r-depth', 'r-length', 'z-w', 'z-h', 'z-label'].includes(e.target.id)) {
 		liveOpen = false;
 		ed.endGesture();
 	}
@@ -376,6 +435,16 @@ fillSelect($('off-formation'), OFFENSE_FORMATIONS);
 fillSelect($('def-formation'), DEFENSE_FORMATIONS);
 $('apply-off').addEventListener('click', () => ed.applyFormation('O', $('off-formation').value));
 $('apply-def').addEventListener('click', () => ed.applyFormation('D', $('def-formation').value));
+$('apply-zones').addEventListener('click', () => {
+	const id = $('def-formation').value;
+	if (!COVERAGE_ZONES[id]) {
+		toast('That look is man coverage, so there are no zones to draw. Pick a zone look such as Cover 3.');
+		return;
+	}
+	const n = ed.applyCoverageZones(id);
+	toast(`Drew ${n} zone${n === 1 ? '' : 's'}. Click one to adjust it.`);
+});
+$('clear-zones').addEventListener('click', () => ed.applyCoverageZones('none'));
 $('add-off').addEventListener('click', () => ed.addPlayer('O'));
 $('add-def').addEventListener('click', () => ed.addPlayer('D'));
 
@@ -445,7 +514,9 @@ $('plays-list').addEventListener('click', (e) => {
 function hintText() {
 	if (readOnly) return 'Viewing a shared play. Choose "Edit a copy" to change it, or print, save, or export it as is.';
 	if (ed.ui.draw) return 'Drawing: click the field to add points. Press Esc or Done drawing when finished.';
-	if (ed.selectedRoute()) return 'Drag the dots to reshape the route. Double-click the line to add a point; double-click or right-click a dot to remove it.';
+	const sr = ed.selectedRoute();
+	if (sr && sr.kind === 'zone') return 'Drag the ellipse to move the zone, or the square handles to resize it. Press Delete to remove it.';
+	if (sr) return 'Drag the dots to reshape the route. Double-click the line to add a point; double-click or right-click a dot to remove it.';
 	if (ed.ui.sel.playerId) return 'Pick a route from the panel, then drag its dots to edit it.';
 	return 'Click a player to give them a route. Drag players to move them. Arrow keys nudge the selected player.';
 }
@@ -489,12 +560,22 @@ function buildSheet(play) {
 }
 
 function printPlays(plays) {
+	clearPrint(); // drop any custom page size left by the sheets dialog
 	$('print-root').innerHTML = plays.map(buildSheet).join('');
 	window.print();
 }
-window.addEventListener('afterprint', () => ($('print-root').innerHTML = ''));
+const clearPrint = () => {
+	$('print-root').innerHTML = '';
+	const st = $('page-style');
+	if (st) st.remove();
+};
+window.addEventListener('afterprint', clearPrint);
 $('btn-print').addEventListener('click', () => printPlays([ed.play]));
 $('btn-print-all').addEventListener('click', () => printPlays(allPlays()));
+
+const sheets = initSheets({ getPlays: allPlays, toast, printRoot: $('print-root') });
+$('btn-sheets').addEventListener('click', () => sheets.open());
+$('btn-sheets2').addEventListener('click', () => sheets.open());
 
 $('btn-png').addEventListener('click', async () => {
 	try {
@@ -515,7 +596,7 @@ $('btn-save').addEventListener('click', () => {
 
 $('btn-export-all').addEventListener('click', () => {
 	const plays = allPlays();
-	downloadText(JSON.stringify({ format: 'ddg-playbook', v: 1, plays }, null, 2), 'diamond-dawg.playbook.json');
+	downloadText(JSON.stringify({ format: 'ddg-playbook', v: 1, plays, sheets: sheets.exportSheets() }, null, 2), 'diamond-dawg.playbook.json');
 	toast(`Exported ${plays.length} play${plays.length === 1 ? '' : 's'}.`);
 });
 
@@ -527,16 +608,21 @@ $('file-input').addEventListener('change', async (e) => {
 	try {
 		const data = JSON.parse(await file.text());
 		const raws = Array.isArray(data.plays) ? data.plays : [data];
+		const idMap = new Map();
 		const plays = raws.slice(0, 200).map((r) => {
 			const p = validatePlay(r);
+			idMap.set(p.id, null);
+			const old = p.id;
 			p.id = uid(); // imported plays are always new copies
+			idMap.set(old, p.id);
 			return p;
 		});
 		if (!plays.length) throw new Error('No plays found in that file');
 		persist();
 		lib.plays.push(...plays);
 		openPlay(plays[0].id);
-		toast(plays.length === 1 ? `Opened "${plays[0].name}".` : `Imported ${plays.length} plays.`);
+		const ns = data.sheets ? sheets.importSheets(data.sheets, idMap) : 0;
+		toast(plays.length === 1 ? `Opened "${plays[0].name}".` : `Imported ${plays.length} plays${ns ? ` and ${ns} sheet${ns === 1 ? '' : 's'}` : ''}.`);
 	} catch (err) {
 		banner(`Could not open that file: ${esc(err.message || 'unrecognised format')}. <button type="button" id="banner-close">Dismiss</button>`, 'error');
 		$('banner-close').addEventListener('click', () => banner(''));
@@ -620,5 +706,5 @@ handleHash();
 
 // Debug hook for automated checks: open /playbook/?debug
 if (new URLSearchParams(location.search).has('debug')) {
-	window.__playbook = { ed, get lib() { return lib; } };
+	window.__playbook = { ed, sheets, get lib() { return lib; } };
 }

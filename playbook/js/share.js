@@ -5,8 +5,8 @@
 
 import { validatePlay } from './model.js';
 
-const KIND = { route: 0, motion: 1 };
-const KIND_BACK = ['route', 'motion'];
+const KIND = { route: 0, motion: 1, zone: 2 };
+const KIND_BACK = ['route', 'motion', 'zone'];
 
 export function pack(play) {
   const index = new Map(play.players.map((p, i) => [p.id, i]));
@@ -31,6 +31,8 @@ export function pack(play) {
         r.color || '',
         r.order,
         r.points.flatMap((pt) => [pt.x, pt.y]),
+        r.zone ? [r.zone.rx, r.zone.ry] : 0,
+        r.label || '',
       ]),
   };
 }
@@ -64,6 +66,8 @@ export function unpack(d) {
         color: r[8] || null,
         order: r[9],
         points,
+        zone: Array.isArray(r[11]) ? { rx: r[11][0], ry: r[11][1] } : null,
+        label: typeof r[12] === 'string' ? r[12] : '',
       };
     }),
   };

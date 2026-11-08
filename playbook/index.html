@@ -25,6 +25,7 @@
 			<span class="sep edit-only"></span>
 			<button id="btn-share" type="button" class="primary">Share link</button>
 			<button id="btn-print" type="button" title="Print or save as PDF">Print</button>
+			<button id="btn-sheets" type="button" title="Print a list of plays on a page or wristband card of any size">Sheets</button>
 			<button id="btn-png" type="button">PNG</button>
 			<button id="btn-save" type="button" title="Download this play as a .play.json file">Save file</button>
 			<button id="btn-open" type="button" class="edit-only" title="Open a .play.json or .playbook.json file">Open file</button>
@@ -64,6 +65,10 @@
 						<button id="apply-def" type="button">Set</button>
 					</div>
 					<div class="row">
+						<button id="apply-zones" type="button" title="Give every defender a zone ellipse for the look chosen above">Draw zones for this look</button>
+						<button id="clear-zones" type="button">Clear zones</button>
+					</div>
+					<div class="row">
 						<button id="add-off" type="button">+ Offense player</button>
 						<button id="add-def" type="button">+ Defense player</button>
 					</div>
@@ -98,6 +103,7 @@
 					<div class="row">
 						<button id="btn-new2" type="button">New play</button>
 						<button id="btn-print-all" type="button">Print playbook</button>
+						<button id="btn-sheets2" type="button" title="Choose plays and a page or card size">Print sheets&hellip;</button>
 						<button id="btn-export-all" type="button">Export playbook</button>
 					</div>
 					<p class="muted">Plays are saved automatically in this browser. Use Save file or Share link to send one to a teammate.</p>
@@ -119,6 +125,74 @@
 				<button value="close">Close</button>
 			</div>
 		</form>
+	</dialog>
+
+	<dialog id="sheet-dialog">
+		<div class="sh-head">
+			<h2>Print sheets</h2>
+			<button type="button" id="sh-close">Close</button>
+		</div>
+		<p class="muted">Choose the plays, set the paper or card size, then print. Pick &ldquo;Save as PDF&rdquo; in the print window to keep a file.</p>
+		<div class="row sh-top">
+			<label class="grow">Sheet<select id="sh-select"></select></label>
+			<label class="grow">Name<input id="sh-name" type="text" maxlength="60" autocomplete="off"></label>
+			<button type="button" id="sh-new">New sheet</button>
+			<button type="button" id="sh-delete" class="danger">Delete sheet</button>
+		</div>
+		<div class="sh-body">
+			<div class="sh-left">
+				<section>
+					<h3>Plays on this sheet <span id="sh-count" class="muted"></span></h3>
+					<ol id="sh-list" class="sh-list"></ol>
+					<div class="row">
+						<button type="button" id="sh-add-all">Add all my plays</button>
+						<button type="button" id="sh-clear">Remove all</button>
+					</div>
+					<h3>Add from my plays</h3>
+					<ul id="sh-lib" class="sh-list"></ul>
+				</section>
+				<section class="sh-controls">
+					<h3>Page</h3>
+					<div class="row three">
+						<label class="grow">Size<select id="sh-preset"></select></label>
+						<label>Units<select id="sh-unit"><option value="in">inches</option><option value="cm">cm</option></select></label>
+					</div>
+					<div class="row three">
+						<label>Width<input id="sh-w" type="number" step="0.1" min="0"></label>
+						<label>Height<input id="sh-h" type="number" step="0.1" min="0"></label>
+						<label>Margin<input id="sh-margin" type="number" step="0.05" min="0"></label>
+						<label>Gap<input id="sh-gap" type="number" step="0.05" min="0"></label>
+					</div>
+					<h3>Plays per page</h3>
+					<div class="seg wide" role="group" aria-label="Layout mode">
+						<button type="button" data-mode="grid">Fill the page (grid)</button>
+						<button type="button" data-mode="fixed">Set each play&rsquo;s size</button>
+					</div>
+					<div class="row three" id="sh-grid-row">
+						<label>Columns<input id="sh-cols" type="number" step="1" min="1" max="8"></label>
+						<label>Rows<input id="sh-rows" type="number" step="1" min="1" max="10"></label>
+					</div>
+					<div class="row three" id="sh-fixed-row">
+						<label>Play width<input id="sh-cw" type="number" step="0.1" min="0"></label>
+						<label>Play height<input id="sh-ch" type="number" step="0.1" min="0"></label>
+					</div>
+					<div class="opts">
+						<label><input type="checkbox" id="sh-title"> Play names</label>
+						<label><input type="checkbox" id="sh-numbers"> Numbers</label>
+						<label><input type="checkbox" id="sh-border"> Borders</label>
+						<label><input type="checkbox" id="sh-crop"> Zoom to the action</label>
+						<label>Show <select id="sh-show"><option value="all">Offense and defense</option><option value="off">Offense only</option><option value="def">Defense only</option></select></label>
+					</div>
+					<p id="sh-summary" class="muted" role="status"></p>
+				</section>
+			</div>
+			<div class="sh-right">
+				<div class="row">
+					<button type="button" id="sh-print" class="primary">Print / Save as PDF</button>
+				</div>
+				<div id="sh-preview" class="sh-preview" aria-label="Preview"></div>
+			</div>
+		</div>
 	</dialog>
 
 	<div id="toast" class="toast" role="status" hidden></div>

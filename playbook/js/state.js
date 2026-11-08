@@ -8,10 +8,10 @@
 
 import {
   END_STYLES, ROUTE_COLORS, clamp, clampToField, findPlayer, findRoute, makePlayer, makeRoute,
-  nextLabel, normField, r1, routeStart,
+  kindsFor, nextLabel, normField, r1, routeStart, zoneCenter,
 } from './model.js';
-import { defaultsFor, generatePoints, outSign } from './routes.js';
-import { formationPlayers } from './formations.js';
+import { ZONE_LIMITS, ZONE_MAP, buildZone, defaultsFor, generatePoints, outSign } from './routes.js';
+import { COVERAGE_ZONES, formationPlayers } from './formations.js';
 import { isVisible } from './render.js';
 
 const MAX_POINTS = 12;
@@ -129,6 +129,8 @@ export class Editor {
       this.ui.draw = false;
       return;
     }
+    const sp = s.playerId && findPlayer(this.play, s.playerId);
+    if (sp && !kindsFor(sp.side).includes(s.kind)) s.kind = this.defaultKind(sp);
     const r = this.selectedRoute();
     if (!r) {
       this.ui.draw = false;
@@ -167,8 +169,21 @@ export class Editor {
   }
 
   // ---- selection / view ---------------------------------------------------
+  // Which tab a freshly selected player opens on: defenders open on their
+  // zone unless they only have a path; everyone keeps motion if it was open.
+  defaultKind(player, wanted) {
+    const kinds = kindsFor(player.side);
+    if (wanted && kinds.includes(wanted)) return wanted;
+    if (player.side === 'D') {
+      const hasPath = !!findRoute(this.play, player.id, 'route');
+      return hasPath && !findRoute(this.play, player.id, 'zone') ? 'route' : 'zone';
+    }
+    return this.ui.sel.kind === 'motion' ? 'motion' : 'route';
+  }
+
   select(playerId, kind) {
-    this.ui.sel = { playerId, kind: kind || this.ui.sel.kind, point: null };
+    const p = this.player(playerId);
+    this.ui.sel = { playerId, kind: p ? this.defaultKind(p, kind) : kind || 'route', point: null };
     this.ui.draw = false;
     this.emit('full');
   }
@@ -180,6 +195,8 @@ export class Editor {
   }
 
   setKind(kind) {
+    const p = this.player(this.ui.sel.playerId);
+    if (p && !kindsFor(p.side).includes(kind)) return;
     this.ui.sel = { ...this.ui.sel, kind, point: null };
     this.ui.draw = false;
     this.emit('full');
@@ -204,7 +221,8 @@ export class Editor {
   }
 
   setDraw(on) {
-    this.ui.draw = !!on && !!this.selectedRoute();
+    const r = this.selectedRoute();
+    this.ui.draw = !!on && !!r && r.kind !== 'zone';
     this.emit('full');
   }
 
@@ -280,6 +298,10 @@ export class Editor {
   regen(route) {
     const player = this.player(route.playerId);
     if (!player || route.preset === 'custom') return;
+    if (route.kind === 'zone') {
+      this.applyZone(route, route.preset);
+      return;
+    }
     const out = outSign(player.x, this.play.field.width, route.flip);
     const raw = generatePoints(route.preset, route.depth, route.length, out);
     // Keep presets inside the lines, wherever the player (or motion) starts.
@@ -296,6 +318,12 @@ export class Editor {
   setPreset(playerId, kind, presetId) {
     this.commit(() => {
       const r = this.ensureRoute(playerId, kind);
+      if (kind === 'zone') {
+        this.applyZone(r, ZONE_MAP[presetId] ? presetId : 'custom');
+        this.ui.sel = { playerId, kind, point: null };
+        this.ui.draw = false;
+        return;
+      }
       if (presetId === 'custom') {
         r.preset = 'custom';
         r.points = [];
@@ -323,8 +351,28 @@ export class Editor {
     });
   }
 
+  // Puts a zone preset on a zone route (size, centre, label). 'custom' drops a
+  // hook-sized ellipse in front of the defender to be dragged where you like.
+  applyZone(route, presetId, slot = null) {
+    const player = this.player(route.playerId);
+    if (!player) return;
+    const field = this.play.field;
+    const built = buildZone(ZONE_MAP[presetId] ? presetId : 'z-hook', player, field, slot);
+    route.kind = 'zone';
+    route.preset = ZONE_MAP[presetId] ? presetId : 'custom';
+    route.points = built.points;
+    route.zone = { rx: built.rx, ry: built.ry };
+    route.label = route.preset === 'custom' ? 'Zone' : built.label;
+    route.edited = route.preset === 'custom';
+    route.end = 'none';
+    route.dash = false;
+  }
+
   cleanPatch(patch) {
     const out = {};
+    if ('rx' in patch) out.rx = clamp(Number(patch.rx) || 0, ZONE_LIMITS.min, Math.min(ZONE_LIMITS.max, this.play.field.width / 2));
+    if ('ry' in patch) out.ry = clamp(Number(patch.ry) || 0, ZONE_LIMITS.min, ZONE_LIMITS.max);
+    if ('label' in patch) out.label = String(patch.label).slice(0, 10);
     if ('depth' in patch) out.depth = clamp(Number(patch.depth) || 0, 0, 60);
     if ('length' in patch) out.length = clamp(Number(patch.length) || 0, 0, 60);
     for (const k of ['flip', 'curve', 'dash']) if (k in patch) out[k] = !!patch[k];
@@ -338,7 +386,15 @@ export class Editor {
     const r = this.routeById(rid);
     if (!r) return;
     const clean = this.cleanPatch(patch);
-    Object.assign(r, clean);
+    const { rx, ry, ...rest } = clean;
+    Object.assign(r, rest);
+    if (r.kind === 'zone') {
+      if (r.zone && (rx !== undefined || ry !== undefined)) {
+        r.zone = { rx: rx !== undefined ? r1(rx) : r.zone.rx, ry: ry !== undefined ? r1(ry) : r.zone.ry };
+        r.edited = true;
+      }
+      return;
+    }
     if (('depth' in clean || 'length' in clean || 'flip' in clean) && r.preset !== 'custom') this.regen(r);
   }
 
@@ -374,16 +430,62 @@ export class Editor {
     if (!r || !r.points[idx]) return;
     const s = routeStart(this.play, r);
     const a = this.absClamp(ax, ay);
+    if (r.kind === 'zone' && r.zone) {
+      // keep the whole ellipse inside the lines
+      const b = this.fieldBounds();
+      a.x = clamp(a.x, Math.min(b.xMin + r.zone.rx, (b.xMin + b.xMax) / 2), Math.max(b.xMax - r.zone.rx, (b.xMin + b.xMax) / 2));
+      a.y = clamp(a.y, Math.min(b.yMin + r.zone.ry, (b.yMin + b.yMax) / 2), Math.max(b.yMax - r.zone.ry, (b.yMin + b.yMax) / 2));
+    }
     r.points[idx] = { x: r1(a.x - s.x), y: r1(a.y - s.y) };
     r.edited = true;
     this.emit('live');
+  }
+
+  // Drag a zone's edge handle (live; wrap in begin/endGesture). axis 'x' or 'y'.
+  dragZoneEdge(rid, axis, ax, ay) {
+    const r = this.routeById(rid);
+    const c = r && r.kind === 'zone' && r.zone ? zoneCenter(this.play, r) : null;
+    if (!c) return;
+    const max = ZONE_LIMITS.max;
+    const rx = axis === 'x' ? clamp(Math.abs(this.sn(ax) - c.x), ZONE_LIMITS.min, Math.min(max, this.play.field.width / 2)) : r.zone.rx;
+    const ry = axis === 'y' ? clamp(Math.abs(this.sn(ay) - c.y), ZONE_LIMITS.min, max) : r.zone.ry;
+    r.zone = { rx: r1(rx), ry: r1(ry) };
+    r.edited = true;
+    this.emit('live');
+  }
+
+  // Replace the zones of every defender with the given coverage (not committed).
+  _applyCoverage(id) {
+    const map = COVERAGE_ZONES[id];
+    const defenders = this.play.players.filter((p) => p.side === 'D');
+    const ids = new Set(defenders.map((p) => p.id));
+    this.play.routes = this.play.routes.filter((r) => !(r.kind === 'zone' && ids.has(r.playerId)));
+    if (!map) return 0;
+    const byPreset = {};
+    for (const d of defenders) if (map[d.label]) (byPreset[map[d.label]] ||= []).push(d);
+    let n = 0;
+    for (const [preset, list] of Object.entries(byPreset)) {
+      list.sort((a, b) => a.x - b.x);
+      const fits = list.length === ZONE_MAP[preset].fr.length;
+      list.forEach((d, i) => {
+        const r = makeRoute(d.id, 'zone');
+        this.applyZone(r, preset, fits ? i : null);
+        this.play.routes.push(r);
+        n++;
+      });
+    }
+    return n;
+  }
+
+  applyCoverageZones(id) {
+    return this.commit(() => this._applyCoverage(id));
   }
 
   // Append at a clicked spot (draw mode).
   appendPoint(rid, ax, ay) {
     this.commit(() => {
       const r = this.routeById(rid);
-      if (!r || r.points.length >= MAX_POINTS) return;
+      if (!r || r.kind === 'zone' || r.points.length >= MAX_POINTS) return;
       const s = routeStart(this.play, r);
       const a = this.absClamp(ax, ay);
       r.points.push({ x: r1(a.x - s.x), y: r1(a.y - s.y) });
@@ -397,7 +499,7 @@ export class Editor {
   addPointAuto(rid) {
     this.commit(() => {
       const r = this.routeById(rid);
-      if (!r || r.points.length >= MAX_POINTS) return;
+      if (!r || r.kind === 'zone' || r.points.length >= MAX_POINTS) return;
       const abs = this.absPoints(r);
       const sel = this.ui.sel.point;
       let idx;
@@ -432,7 +534,7 @@ export class Editor {
     let done = false;
     this.commit(() => {
       const r = this.routeById(rid);
-      if (!r || r.points.length >= MAX_POINTS) return;
+      if (!r || r.kind === 'zone' || r.points.length >= MAX_POINTS) return;
       const abs = this.absPoints(r);
       let best = null;
       for (let i = 0; i < abs.length - 1; i++) {
@@ -452,7 +554,7 @@ export class Editor {
   deletePoint(rid, idx) {
     this.commit(() => {
       const r = this.routeById(rid);
-      if (!r || !r.points[idx]) return;
+      if (!r || r.kind === 'zone' || !r.points[idx]) return;
       r.points.splice(idx, 1);
       r.edited = true;
       this.ui.sel.point = null;
@@ -475,11 +577,38 @@ export class Editor {
     return best;
   }
 
+  // Defender -> ellipse edge, in field coordinates (y up), or null if inside.
+  zoneLine(r) {
+    const p = this.player(r.playerId);
+    const c = r.zone ? zoneCenter(this.play, r) : null;
+    if (!p || !c) return null;
+    const dx = p.x - c.x;
+    const dy = p.y - c.y;
+    const k = Math.hypot(dx / r.zone.rx, dy / r.zone.ry);
+    if (k <= 1.02) return null;
+    return [{ x: p.x, y: p.y }, { x: c.x + dx / k, y: c.y + dy / k }];
+  }
+
   hitRoute(pos, maxDist = 1.4) {
     let best = null;
     for (const r of this.play.routes) {
       const p = this.player(r.playerId);
       if (!p || !isVisible(this.ui.show, p.side)) continue;
+      if (r.kind === 'zone') {
+        const zc = r.zone ? zoneCenter(this.play, r) : null;
+        if (zc) {
+          const k = Math.hypot((pos.x - zc.x) / r.zone.rx, (pos.y - zc.y) / r.zone.ry);
+          // inside the ellipse counts (a little worse than a line), as does its rim
+          const d = k <= 1 ? 1 : Math.abs(k - 1) * Math.min(r.zone.rx, r.zone.ry);
+          if (d <= maxDist && (!best || d < best.dist)) best = { rid: r.id, dist: d };
+        }
+        const line = this.zoneLine(r);
+        if (line) {
+          const c = closestOnSegment(line[0], line[1], pos);
+          if (c.dist <= maxDist && (!best || c.dist < best.dist)) best = { rid: r.id, dist: c.dist };
+        }
+        continue;
+      }
       const abs = this.absPoints(r);
       for (let i = 0; i < abs.length - 1; i++) {
         const c = closestOnSegment(abs[i], abs[i + 1], pos);
@@ -517,6 +646,7 @@ export class Editor {
           next.push(makePlayer(side, e.label, e.x, e.y));
         }
       }
+      const hadZones = side === 'D' && this.play.routes.some((r) => r.kind === 'zone' && !r.edited);
       const other = this.play.players.filter((p) => p.side !== side);
       this.play.players = side === 'O' ? [...next, ...other] : [...other, ...next];
       const alive = new Set(this.play.players.map((p) => p.id));
@@ -525,6 +655,7 @@ export class Editor {
         const p = this.player(r.playerId);
         if (p && p.side === side && r.preset !== 'custom' && !r.edited) this.regen(r);
       }
+      if (hadZones) this._applyCoverage(id); // zones follow the new look (man drops them)
     });
   }
 

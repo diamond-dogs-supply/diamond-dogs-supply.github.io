@@ -107,3 +107,10 @@ export function formationPlayers(side, id, field, offense = []) {
   const def = DEFENSE[id] && DEFENSE[id].p ? DEFENSE[id] : DEFENSE.cover3;
   return place(def.p, field, false);
 }
+
+// Which zone each defender drops to for a given look (by label).
+export const COVERAGE_ZONES = {
+  cover3: { A: 'z-third', B: 'z-third', C: 'z-third', D: 'z-flat', G: 'z-flat', E: 'z-hook', F: 'z-hook' },
+  cover2: { A: 'z-half', B: 'z-half', C: 'z-flat', G: 'z-flat', D: 'z-hook', E: 'z-hook', F: 'z-hook' },
+  cover4: { A: 'z-quarter', B: 'z-quarter', C: 'z-quarter', D: 'z-quarter', E: 'z-flat', G: 'z-flat', F: 'z-hook' },
+};

@@ -2,7 +2,7 @@
 // editor, PNG/SVG exports and the printed sheets, so what you see is what you
 // print. All user text is escaped.
 
-import { routeStart, findPlayer } from './model.js';
+import { routeStart, findPlayer, zoneCenter } from './model.js';
 
 export const THEMES = {
   screen: {
@@ -40,6 +40,52 @@ export function geom(play) {
   };
 }
 
+export function fullView(g) {
+  return { x: -MARGIN, y: -MARGIN, w: g.vbW, h: g.vbH };
+}
+
+// A tighter view around everything that is drawn (players, routes, zones, the
+// line of scrimmage), for small printed cards. `aspect` (w/h) stretches the
+// view to fill a cell of that shape instead of leaving blank bands.
+export function viewFor(play, opts = {}) {
+  const g = geom(play);
+  const show = opts.show || 'all';
+  const xs = [];
+  const ys = [];
+  const K = opts.glyph || 1;
+  const add = (x0, y0, x1 = x0, y1 = y0) => { xs.push(x0, x1); ys.push(y0, y1); };
+  const visible = new Set(play.players.filter((p) => isVisible(show, p.side)).map((p) => p.id));
+  for (const p of play.players) {
+    if (!visible.has(p.id)) continue;
+    const y = g.sy(p.y);
+    add(p.x - 1.6 * K, y - 1.6 * K, p.x + 1.6 * K, y + (p.side === 'D' ? 3 : 1.6) * K);
+  }
+  for (const r of play.routes) {
+    if (!visible.has(r.playerId)) continue;
+    for (const pt of routeScreenPoints(play, r)) add(pt.x - 2.2 * K, pt.y - 2.2 * K, pt.x + 2.2 * K, pt.y + 2.2 * K);
+    const c = r.kind === 'zone' && r.zone ? zoneCenter(play, r) : null;
+    if (c) add(c.x - r.zone.rx - 0.4, g.sy(c.y) - r.zone.ry - 0.4, c.x + r.zone.rx + 0.4, g.sy(c.y) + r.zone.ry + 0.4);
+  }
+  if (!xs.length) return fullView(g);
+  ys.push(g.sy(0) - 1.2, g.sy(0) + 1.8 * K); // keep the line of scrimmage in frame (y only)
+  let x0 = Math.min(...xs) - 0.6;
+  let x1 = Math.max(...xs) + 0.6;
+  let y0 = Math.min(...ys) - 0.6 - (opts.title === false ? 0 : 3.4 * K); // room for the title chip
+  let y1 = Math.max(...ys) + 0.6;
+  x0 = Math.max(x0, -MARGIN);
+  x1 = Math.min(x1, g.W + MARGIN);
+  y0 = Math.max(y0, -MARGIN);
+  y1 = Math.min(y1, g.L + MARGIN);
+  let w = Math.max(x1 - x0, 16);
+  let h = Math.max(y1 - y0, 11);
+  const aspect = opts.aspect > 0 ? opts.aspect : w / h;
+  if (w / h < aspect) w = h * aspect;
+  else h = w / aspect;
+  const cx = (x0 + x1) / 2;
+  const top = y0; // keep the title room at the top, grow downward when height is spare
+  return { x: cx - w / 2, y: top - (h - (y1 - y0)) / 2, w, h };
+}
+
 export function isVisible(show, side) {
   return show === 'all' || (show === 'off' && side === 'O') || (show === 'def' && side === 'D');
 }
@@ -75,41 +121,42 @@ function dirOf(pts) {
   return { x: dx / len, y: dy / len, len: Math.hypot(dx, dy) };
 }
 
-function drawRoute(play, route, opts, th, selected) {
+function drawRoute(play, route, opts, th, selected, ptsOverride) {
   const player = findPlayer(play, route.playerId);
-  const pts = routeScreenPoints(play, route);
+  const pts = ptsOverride || routeScreenPoints(play, route);
   if (pts.length < 2) return '';
   const color = safeColor(route.color, player && player.side === 'D' ? th.routeD : th.routeO);
-  const width = selected ? 0.38 : 0.28;
+  const K = opts.glyph || 1;
+  const width = (selected ? 0.38 : 0.28) * K;
   const dir = dirOf(pts);
   const tip = pts[pts.length - 1];
   const line = pts.slice();
-  if (route.end === 'arrow' && dir.len > 0.9) {
-    line[line.length - 1] = { x: tip.x - dir.x * 0.7, y: tip.y - dir.y * 0.7 };
+  if (route.end === 'arrow' && dir.len > 0.9 * K) {
+    line[line.length - 1] = { x: tip.x - dir.x * 0.7 * K, y: tip.y - dir.y * 0.7 * K };
   }
-  const dash = route.dash ? ' stroke-dasharray="0.9 0.6"' : '';
+  const dash = route.dash ? ` stroke-dasharray="${f(0.9 * K)} ${f(0.6 * K)}"` : '';
   let out = `<g>`;
   if (selected && opts.editor) {
     out += `<path d="${pathD(line, route.curve)}" fill="none" stroke="${th.sel}" stroke-opacity="0.45" stroke-width="${f(width + 0.6)}" stroke-linecap="round" stroke-linejoin="round"/>`;
   }
   out += `<path d="${pathD(line, route.curve)}" fill="none" stroke="${color}" stroke-width="${f(width)}" stroke-linecap="round" stroke-linejoin="round"${dash}/>`;
   if (route.end === 'arrow') {
-    const base = { x: tip.x - dir.x * 1.0, y: tip.y - dir.y * 1.0 };
+    const base = { x: tip.x - dir.x * K, y: tip.y - dir.y * K };
     const nx = -dir.y;
     const ny = dir.x;
-    out += `<polygon points="${f(tip.x)},${f(tip.y)} ${f(base.x + nx * 0.55)},${f(base.y + ny * 0.55)} ${f(base.x - nx * 0.55)},${f(base.y - ny * 0.55)}" fill="${color}"/>`;
+    out += `<polygon points="${f(tip.x)},${f(tip.y)} ${f(base.x + nx * 0.55 * K)},${f(base.y + ny * 0.55 * K)} ${f(base.x - nx * 0.55 * K)},${f(base.y - ny * 0.55 * K)}" fill="${color}"/>`;
   } else if (route.end === 'T') {
     const nx = -dir.y;
     const ny = dir.x;
-    out += `<line x1="${f(tip.x + nx * 0.85)}" y1="${f(tip.y + ny * 0.85)}" x2="${f(tip.x - nx * 0.85)}" y2="${f(tip.y - ny * 0.85)}" stroke="${color}" stroke-width="${f(width)}" stroke-linecap="round"/>`;
+    out += `<line x1="${f(tip.x + nx * 0.85 * K)}" y1="${f(tip.y + ny * 0.85 * K)}" x2="${f(tip.x - nx * 0.85 * K)}" y2="${f(tip.y - ny * 0.85 * K)}" stroke="${color}" stroke-width="${f(width)}" stroke-linecap="round"/>`;
   } else if (route.end === 'dot') {
-    out += `<circle cx="${f(tip.x)}" cy="${f(tip.y)}" r="0.45" fill="${color}"/>`;
+    out += `<circle cx="${f(tip.x)}" cy="${f(tip.y)}" r="${f(0.45 * K)}" fill="${color}"/>`;
   }
   if (route.order > 0) {
-    const bx = tip.x + dir.x * 1.9;
-    const by = tip.y + dir.y * 1.9;
-    out += `<circle cx="${f(bx)}" cy="${f(by)}" r="0.8" fill="${th.badgeFill}" stroke="${color}" stroke-width="0.14"/>`;
-    out += `<text x="${f(bx)}" y="${f(by + 0.33)}" text-anchor="middle" font-family="${FONT}" font-size="0.95" font-weight="700" fill="${th.badgeText}">${route.order}</text>`;
+    const bx = tip.x + dir.x * 1.9 * K;
+    const by = tip.y + dir.y * 1.9 * K;
+    out += `<circle cx="${f(bx)}" cy="${f(by)}" r="${f(0.8 * K)}" fill="${th.badgeFill}" stroke="${color}" stroke-width="${f(0.14 * K)}"/>`;
+    out += `<text x="${f(bx)}" y="${f(by + 0.33 * K)}" text-anchor="middle" font-family="${FONT}" font-size="${f(0.95 * K)}" font-weight="700" fill="${th.badgeText}">${route.order}</text>`;
   }
   if (opts.editor) {
     out += `<path d="${pathD(pts, route.curve)}" fill="none" stroke="transparent" stroke-width="1.8" style="pointer-events:stroke;cursor:pointer" data-rid="${esc(route.id)}"/>`;
@@ -117,30 +164,76 @@ function drawRoute(play, route, opts, th, selected) {
   return out + '</g>';
 }
 
+// A zone: translucent ellipse plus the line from the defender to its edge.
+function zoneParts(play, route, g, K = 1) {
+  const player = findPlayer(play, route.playerId);
+  const c = zoneCenter(play, route);
+  if (!player || !c || !route.zone) return null;
+  const cx = c.x;
+  const cy = g.sy(c.y);
+  const px = player.x;
+  const py = g.sy(player.y);
+  const dx = px - cx;
+  const dy = py - cy;
+  const k = Math.hypot(dx / route.zone.rx, dy / route.zone.ry);
+  let line = null;
+  if (k > 1.02) {
+    const edge = { x: cx + dx / k, y: cy + dy / k };
+    const len = Math.hypot(edge.x - px, edge.y - py);
+    const u = { x: (edge.x - px) / len, y: (edge.y - py) / len };
+    const start = { x: px + u.x * 1.5 * K, y: py + u.y * 1.5 * K }; // start outside the defender's X
+    if (len > 2.2 * K) line = [start, edge];
+  }
+  return { cx, cy, line };
+}
+
+function drawZone(play, route, g, opts, th, selected) {
+  const zp = zoneParts(play, route, g, opts.glyph || 1);
+  if (!zp) return { under: '', over: '' };
+  const { rx, ry } = route.zone;
+  const color = safeColor(route.color, th.routeD);
+  const K = opts.glyph || 1;
+  const sw = (selected ? 0.34 : 0.24) * K;
+  let under = '';
+  if (selected && opts.editor) {
+    under += `<ellipse cx="${f(zp.cx)}" cy="${f(zp.cy)}" rx="${f(rx)}" ry="${f(ry)}" fill="none" stroke="${th.sel}" stroke-opacity="0.5" stroke-width="${f(sw + 0.6)}"/>`;
+  }
+  const hit = opts.editor ? ` data-rid="${esc(route.id)}" style="cursor:pointer"` : '';
+  under += `<ellipse cx="${f(zp.cx)}" cy="${f(zp.cy)}" rx="${f(rx)}" ry="${f(ry)}" fill="${color}" fill-opacity="0.17" stroke="${color}" stroke-width="${f(sw)}" stroke-dasharray="${f(0.9 * K)} ${f(0.5 * K)}"${hit}/>`;
+  if (route.label) {
+    const size = Math.max(0.6, Math.min(1.05 * K, (rx * 1.7) / (route.label.length * 0.6)));
+    under += `<text x="${f(zp.cx)}" y="${f(zp.cy - Math.min(ry * 0.3, 1.1) + size * 0.35)}" text-anchor="middle" font-family="${FONT}" font-size="${f(size)}" font-weight="700" fill="${color}" stroke="${th.halo}" stroke-width="${f(0.2 * K)}" style="paint-order:stroke;pointer-events:none">${esc(route.label)}</text>`;
+  }
+  const over = zp.line ? drawRoute(play, route, opts, th, selected, zp.line) : '';
+  return { under, over };
+}
+
 function drawPlayer(p, g, th, opts) {
   const cx = p.x;
   const cy = g.sy(p.y);
   const label = esc(p.label);
   const small = p.label.length > 2;
+  const K = opts.glyph || 1;
   const hit = opts.editor ? ` data-pid="${esc(p.id)}" style="cursor:grab"` : '';
   let out = `<g${hit}>`;
   if (opts.editor && opts.sel && opts.sel.playerId === p.id) {
     out += `<circle cx="${f(cx)}" cy="${f(cy)}" r="1.9" fill="none" stroke="${th.sel}" stroke-width="0.22" stroke-dasharray="0.5 0.35"/>`;
   }
   if (p.side === 'O') {
-    out += `<circle cx="${f(cx)}" cy="${f(cy)}" r="1.15" fill="${th.offFill}" stroke="${th.offStroke}" stroke-width="0.18"/>`;
-    out += `<text x="${f(cx)}" y="${f(cy + (small ? 0.3 : 0.38))}" text-anchor="middle" font-family="${FONT}" font-size="${small ? 0.8 : 1.1}" font-weight="700" fill="${th.offText}" style="pointer-events:none">${label}</text>`;
+    out += `<circle cx="${f(cx)}" cy="${f(cy)}" r="${f(1.15 * K)}" fill="${th.offFill}" stroke="${th.offStroke}" stroke-width="${f(0.18 * K)}"/>`;
+    out += `<text x="${f(cx)}" y="${f(cy + (small ? 0.3 : 0.38) * K)}" text-anchor="middle" font-family="${FONT}" font-size="${f((small ? 0.8 : 1.1) * K)}" font-weight="700" fill="${th.offText}" style="pointer-events:none">${label}</text>`;
   } else {
-    out += `<circle cx="${f(cx)}" cy="${f(cy)}" r="1.6" fill="transparent"/>`;
-    out += `<path d="M${f(cx - 0.95)} ${f(cy - 0.95)} L${f(cx + 0.95)} ${f(cy + 0.95)} M${f(cx + 0.95)} ${f(cy - 0.95)} L${f(cx - 0.95)} ${f(cy + 0.95)}" stroke="${th.def}" stroke-width="0.34" stroke-linecap="round" fill="none"/>`;
-    out += `<text x="${f(cx)}" y="${f(cy + 2.35)}" text-anchor="middle" font-family="${FONT}" font-size="0.95" font-weight="700" fill="${th.def}" stroke="${th.halo}" stroke-width="0.22" style="paint-order:stroke;pointer-events:none">${label}</text>`;
+    const a = 0.95 * K;
+    out += `<circle cx="${f(cx)}" cy="${f(cy)}" r="${f(1.6 * K)}" fill="transparent"/>`;
+    out += `<path d="M${f(cx - a)} ${f(cy - a)} L${f(cx + a)} ${f(cy + a)} M${f(cx + a)} ${f(cy - a)} L${f(cx - a)} ${f(cy + a)}" stroke="${th.def}" stroke-width="${f(0.34 * K)}" stroke-linecap="round" fill="none"/>`;
+    out += `<text x="${f(cx)}" y="${f(cy + 2.35 * K)}" text-anchor="middle" font-family="${FONT}" font-size="${f(0.95 * K)}" font-weight="700" fill="${th.def}" stroke="${th.halo}" stroke-width="${f(0.22 * K)}" style="paint-order:stroke;pointer-events:none">${label}</text>`;
   }
   return out + '</g>';
 }
 
-function drawField(g, th) {
+function drawField(g, th, view) {
   const { W, L, B, sy } = g;
-  let out = `<rect x="${-MARGIN}" y="${-MARGIN}" width="${f(g.vbW)}" height="${f(g.vbH)}" fill="${th.page}"/>`;
+  let out = `<rect x="${f(view.x)}" y="${f(view.y)}" width="${f(view.w)}" height="${f(view.h)}" fill="${th.page}"/>`;
   out += `<rect x="0" y="0" width="${W}" height="${L}" fill="${th.field}" stroke="${th.border}" stroke-width="0.3"/>`;
   const yMin = -B;
   const yMax = L - B;
@@ -179,13 +272,14 @@ export function svgInner(play, opts = {}) {
   const th = THEMES[opts.theme] || THEMES.screen;
   const show = opts.show || 'all';
   const g = geom(play);
-  let out = drawField(g, th);
+  const view = opts.view || (opts.crop ? viewFor(play, opts) : fullView(g));
+  let out = drawField(g, th, view);
 
   if (opts.title !== false) {
-    out += chip(0.8, 0.8, play.name || 'Untitled play', 1.5, th, false, Math.max(8, g.W - 12));
+    out += chip(Math.max(view.x + 0.8, 0.8), Math.max(view.y + 0.8, 0.8), opts.titleText != null ? String(opts.titleText) : play.name || 'Untitled play', 1.5 * (opts.glyph || 1), th, false, Math.max(8, view.w - 15 * (opts.glyph || 1)));
   }
   if (show !== 'all') {
-    out += chip(g.W - 0.8, 0.8, show === 'off' ? 'OFFENSE' : 'DEFENSE', 1.0, th, true, 9);
+    out += chip(Math.min(view.x + view.w - 0.8, g.W - 0.8), Math.max(view.y + 0.8, 0.8), show === 'off' ? 'OFFENSE' : 'DEFENSE', 1.0 * (opts.glyph || 1), th, true, 9 * (opts.glyph || 1));
   }
 
   const visible = new Set(play.players.filter((p) => isVisible(show, p.side)).map((p) => p.id));
@@ -193,10 +287,18 @@ export function svgInner(play, opts = {}) {
     ? play.routes.find((r) => r.playerId === opts.sel.playerId && r.kind === opts.sel.kind)
     : null;
 
+  const zoneOver = [];
   for (const r of play.routes) {
-    if (!visible.has(r.playerId)) continue;
+    if (!visible.has(r.playerId) || r.kind !== 'zone') continue;
+    const z = drawZone(play, r, g, opts, th, !!selRoute && selRoute.id === r.id);
+    out += z.under;
+    zoneOver.push(z.over);
+  }
+  for (const r of play.routes) {
+    if (!visible.has(r.playerId) || r.kind === 'zone') continue;
     out += drawRoute(play, r, opts, th, !!selRoute && selRoute.id === r.id);
   }
+  out += zoneOver.join('');
   for (const p of play.players) {
     if (visible.has(p.id)) out += drawPlayer(p, g, th, opts);
   }
@@ -204,6 +306,12 @@ export function svgInner(play, opts = {}) {
   if (selRoute && visible.has(selRoute.playerId)) {
     const pts = routeScreenPoints(play, selRoute);
     const selPt = opts.sel.point;
+    if (selRoute.kind === 'zone' && selRoute.zone) {
+      const c = zoneCenter(play, selRoute);
+      const cy = g.sy(c.y);
+      const sq = (x, y, axis) => `<rect x="${f(x - 0.65)}" y="${f(y - 0.65)}" width="1.3" height="1.3" rx="0.2" fill="#ffffff" stroke="${th.sel}" stroke-width="0.18" data-zr="${axis}" data-rid="${esc(selRoute.id)}" style="cursor:${axis === 'x' ? 'ew-resize' : 'ns-resize'}"/>`;
+      out += sq(c.x + selRoute.zone.rx, cy, 'x') + sq(c.x, cy - selRoute.zone.ry, 'y');
+    }
     for (let i = 1; i < pts.length; i++) {
       const on = selPt === i - 1;
       out += `<circle cx="${f(pts[i].x)}" cy="${f(pts[i].y)}" r="${on ? 0.95 : 0.7}" fill="${on ? '#ffffff' : th.sel}" stroke="${on ? th.sel : '#ffffff'}" stroke-width="0.18" data-pt="${i - 1}" data-rid="${esc(selRoute.id)}" style="cursor:move"/>`;
@@ -212,17 +320,27 @@ export function svgInner(play, opts = {}) {
   return out;
 }
 
-export function svgOpenAttrs(play, size) {
+export function svgOpenAttrs(play, size, view) {
   const g = geom(play);
   const dims = size ? ` width="${size.width}" height="${size.height}"` : '';
-  return `xmlns="http://www.w3.org/2000/svg" viewBox="${g.vb}"${dims}`;
+  const vb = view ? `${f(view.x)} ${f(view.y)} ${f(view.w)} ${f(view.h)}` : g.vb;
+  return `xmlns="http://www.w3.org/2000/svg" viewBox="${vb}"${dims}`;
 }
 
 // Standalone <svg> string for export and print.
 export function playToSVG(play, opts = {}) {
   const g = geom(play);
+  // Printed cells are small, so players, letters and lines are enlarged to stay
+  // readable: about 11 yards per inch is the natural size, more than that scales up.
+  const pick = (o) => (opts.crop ? viewFor(play, o) : fullView(g));
+  let view = pick(opts);
+  let glyph = opts.glyph || 1;
+  if (!opts.glyph && opts.cellWIn > 0) {
+    glyph = Math.min(1.8, Math.max(1, view.w / opts.cellWIn / 11));
+    if (glyph > 1.02) view = pick({ ...opts, glyph });
+  }
   let size = null;
-  if (opts.widthPx) size = { width: opts.widthPx, height: Math.round((opts.widthPx * g.vbH) / g.vbW) };
+  if (opts.widthPx) size = { width: opts.widthPx, height: Math.round((opts.widthPx * view.h) / view.w) };
   const label = `Play diagram: ${play.name || 'Untitled play'}`;
-  return `<svg ${svgOpenAttrs(play, size)} role="img" aria-label="${esc(label)}">${svgInner(play, { ...opts, editor: false })}</svg>`;
+  return `<svg ${svgOpenAttrs(play, size, view)} role="img" aria-label="${esc(label)}">${svgInner(play, { ...opts, view, glyph, editor: false })}</svg>`;
 }

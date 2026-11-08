@@ -7,11 +7,12 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 import { newPlay, validatePlay, normField, routeStart, findRoute } from '../js/model.js';
-import { generatePoints, PRESETS, outSign } from '../js/routes.js';
+import { generatePoints, PRESETS, outSign, ZONE_PRESETS, buildZone } from '../js/routes.js';
 import { Editor } from '../js/state.js';
 import { encodePlay, decodePlay, codeFromHash, pack } from '../js/share.js';
-import { playToSVG, svgInner } from '../js/render.js';
+import { playToSVG, svgInner, viewFor } from '../js/render.js';
 import { formationPlayers } from '../js/formations.js';
+import { layoutSheet, normLayout, pageCount, pageStyle, sheetHTML, validateSheet, newSheet, toUnit, fromUnit } from '../js/sheet.js';
 
 const byLabel = (play, side, label) => play.players.find((p) => p.side === side && p.label === label);
 
@@ -324,4 +325,199 @@ test('render: well-formed SVG with title corner, field size, and side filter', (
   } catch (e) {
     if (e.code !== 'ENOENT') throw e; // xmllint not installed: skip the XML check
   }
+});
+
+
+// ---- defensive zones -------------------------------------------------------
+const zoneOf = (ed, label) => findRoute(ed.play, byLabel(ed.play, 'D', label).id, 'zone');
+
+test('every zone preset keeps its ellipse inside the field, for several field sizes', () => {
+  for (const field of [{ width: 40, length: 35, backfield: 10 }, { width: 25, length: 30, backfield: 8 }, { width: 55, length: 60, backfield: 12 }]) {
+    for (const z of ZONE_PRESETS) {
+      for (let slot = 0; slot < z.fr.length; slot++) {
+        const b = buildZone(z.id, { x: 20, y: 5 }, field, slot);
+        const cx = 20 + b.points[0].x;
+        const cy = 5 + b.points[0].y;
+        assert.ok(cx - b.rx >= -0.01 && cx + b.rx <= field.width + 0.01, `${z.id} x fits ${field.width}`);
+        assert.ok(cy - b.ry >= -field.backfield - 0.01 && cy + b.ry <= field.length - field.backfield + 0.01, `${z.id} y fits`);
+      }
+    }
+  }
+});
+
+test('setting a zone on a defender, editing it, and undoing', () => {
+  const ed = new Editor(newPlay());
+  const d = byLabel(ed.play, 'D', 'E');
+  ed.select(d.id);
+  assert.equal(ed.ui.sel.kind, 'zone', 'a defender opens on the zone tab');
+  ed.setPreset(d.id, 'zone', 'z-hook');
+  const z = zoneOf(ed, 'E');
+  assert.equal(z.kind, 'zone');
+  assert.equal(z.points.length, 1);
+  assert.ok(z.zone.rx > 1 && z.zone.ry > 1);
+  assert.equal(z.label, 'Hook');
+  ed.updateRoute(z.id, { rx: 99, label: 'Curl/flat and more' });
+  assert.equal(zoneOf(ed, 'E').zone.rx, 20, 'width clamps to half the field');
+  assert.equal(zoneOf(ed, 'E').label.length, 10);
+  const before = zoneOf(ed, 'E').points[0];
+  ed.beginGesture();
+  ed.movePoint(z.id, 0, 10, 12);
+  ed.endGesture();
+  assert.notDeepEqual(zoneOf(ed, 'E').points[0], before);
+  ed.undo();
+  assert.deepEqual(zoneOf(ed, 'E').points[0], before);
+  ed.deletePoint(z.id, 0);
+  assert.ok(zoneOf(ed, 'E'), 'the zone centre cannot be deleted');
+  ed.dragZoneEdge(z.id, 'y', 20, 14);
+  assert.ok(zoneOf(ed, 'E').edited);
+});
+
+test('offence cannot take zones; defenders can still have a path route', () => {
+  const ed = new Editor(newPlay());
+  const q = byLabel(ed.play, 'O', 'X');
+  ed.select(q.id);
+  assert.equal(ed.ui.sel.kind, 'route');
+  ed.setKind('zone');
+  assert.equal(ed.ui.sel.kind, 'route', 'zone tab is not available to offence');
+  const d = byLabel(ed.play, 'D', 'D');
+  ed.setPreset(d.id, 'route', 'flat');
+  ed.select(d.id);
+  assert.equal(ed.ui.sel.kind, 'route', 'a defender with only a path opens on it');
+  ed.setPreset(d.id, 'zone', 'z-flat');
+  assert.ok(findRoute(ed.play, d.id, 'route') && findRoute(ed.play, d.id, 'zone'));
+});
+
+test('coverage buttons give every defender a zone, and follow a look change', () => {
+  const ed = new Editor(newPlay());
+  assert.equal(ed.applyCoverageZones('cover3'), 7);
+  const zones = ed.play.routes.filter((r) => r.kind === 'zone');
+  assert.equal(zones.length, 7);
+  const deep = zones.filter((r) => r.preset === 'z-third').map((r) => r.points[0].x + ed.player(r.playerId).x).sort((a, b) => a - b);
+  assert.equal(deep.length, 3);
+  assert.ok(deep[0] < deep[1] && deep[1] < deep[2], 'three different deep thirds');
+  ed.applyFormation('D', 'cover2');
+  assert.equal(ed.play.routes.filter((r) => r.kind === 'zone' && r.preset === 'z-half').length, 2);
+  ed.applyFormation('D', 'man');
+  assert.equal(ed.play.routes.filter((r) => r.kind === 'zone').length, 0, 'man drops the zones');
+  assert.equal(ed.applyCoverageZones('man'), 0);
+});
+
+test('zones: hit testing, share round trip, validation and rendering', async () => {
+  const ed = new Editor(newPlay());
+  ed.applyCoverageZones('cover3');
+  const z = ed.play.routes.find((r) => r.preset === 'z-third');
+  const c = { x: ed.player(z.playerId).x + z.points[0].x, y: ed.player(z.playerId).y + z.points[0].y };
+  assert.equal(ed.hitRoute(c).rid, z.id, 'inside the ellipse selects the zone');
+  assert.equal(ed.hitRoute({ x: -50, y: -50 }), null);
+
+  const back = await decodePlay(await encodePlay(ed.play));
+  const zb = back.routes.filter((r) => r.kind === 'zone');
+  assert.equal(zb.length, 7);
+  const same = zb.find((r) => r.preset === 'z-third');
+  assert.equal(same.zone.rx, z.zone.rx);
+  assert.equal(same.label, 'Deep 1/3');
+
+  const evil = validatePlay({
+    players: [{ id: 'a', side: 'O', label: 'X', x: 5, y: 0 }, { id: 'd', side: 'D', label: 'A', x: 8, y: 5 }],
+    routes: [
+      { playerId: 'a', kind: 'zone', points: [{ x: 1, y: 1 }], zone: { rx: 5, ry: 5 } },
+      { playerId: 'd', kind: 'zone', points: [], zone: { rx: 5, ry: 5 } },
+      { playerId: 'd', kind: 'zone', points: [{ x: 3, y: 9 }, { x: 4, y: 4 }], zone: { rx: 1e9, ry: -4 }, label: '<script>alert(1)</script>', preset: 'nope' },
+    ],
+  });
+  assert.equal(evil.routes.length, 1, 'offence zone and point-less zone are dropped');
+  assert.equal(evil.routes[0].points.length, 1);
+  assert.equal(evil.routes[0].zone.rx, 30);
+  assert.equal(evil.routes[0].zone.ry, 1.5);
+  assert.equal(evil.routes[0].preset, 'custom');
+  assert.ok(!svgInner(evil, { theme: 'print' }).includes('<script'), 'zone labels are escaped');
+
+  const svg = svgInner(ed.play, { theme: 'print' });
+  assert.equal((svg.match(/<ellipse/g) || []).length, 7);
+  assert.ok(!svgInner(ed.play, { theme: 'print', show: 'off' }).includes('<ellipse'), 'offence only hides zones');
+});
+
+test('cropped view hugs the action and respects the cell shape', () => {
+  const ed = new Editor(newPlay());
+  ed.setPreset(byLabel(ed.play, 'O', 'X').id, 'route', 'post');
+  const full = playToSVG(ed.play);
+  const crop = playToSVG(ed.play, { crop: true, aspect: 1.4 });
+  const vb = (s) => s.match(/viewBox="([^"]+)"/)[1].split(' ').map(Number);
+  const [, , fw, fh] = vb(full);
+  const [, , cw, ch] = vb(crop);
+  assert.ok(cw * ch < fw * fh, 'crop is smaller than the whole field');
+  assert.ok(Math.abs(cw / ch - 1.4) < 0.02, 'crop matches the requested aspect');
+  const v = viewFor(ed.play, { show: 'off' });
+  assert.ok(v.w >= 16 && v.h >= 11);
+});
+
+
+// ---- print sheets ------------------------------------------------------------
+test('sheet grid maths: Letter, 3 x 4, margin .4, gap .12', () => {
+  const g = layoutSheet({ preset: 'letter', mode: 'grid', cols: 3, rows: 4, margin: 0.4, gap: 0.12 });
+  assert.equal(g.perPage, 12);
+  assert.ok(Math.abs(g.cellW - (8.5 - 0.8 - 0.24) / 3) < 0.002, `cellW ${g.cellW}`);
+  assert.ok(Math.abs(g.cellH - (11 - 0.8 - 0.36) / 4) < 0.002, `cellH ${g.cellH}`);
+  assert.equal(pageCount(25, g.perPage), 3);
+  assert.equal(pageCount(24, g.perPage), 2);
+  assert.equal(pageCount(0, g.perPage), 0);
+});
+
+test('sheet fixed-size mode fits as many plays as the page allows', () => {
+  const g = layoutSheet({ preset: 'letter', mode: 'fixed', cellW: 2.4, cellH: 1.7, margin: 0.5, gap: 0.1 });
+  assert.equal(g.cols, 3); // 7.5in wide: 3 x 2.4 + 2 x .1 = 7.4
+  assert.equal(g.rows, 5); // 10in tall: 5 x 1.7 + 4 x .1 = 8.9 (6 would need 10.7)
+  assert.equal(g.perPage, 15);
+  const big = layoutSheet({ preset: 'wristband', mode: 'fixed', cellW: 30, cellH: 30, margin: 0.2 });
+  assert.equal(big.perPage, 1);
+  assert.ok(big.cellW <= 4.6 && big.cellH <= 2.6, 'an oversized play is shrunk to the page');
+});
+
+test('sheet layout is clamped and presets set the page size', () => {
+  const l = normLayout({ preset: 'wristband', pageW: 99, margin: -3, cols: 99, rows: 0, gap: 'x', show: 'evil', unit: 'furlong' });
+  assert.equal(l.pageW, 5);
+  assert.equal(l.pageH, 3);
+  assert.equal(l.margin, 0);
+  assert.equal(l.cols, 8);
+  assert.equal(l.rows, 1);
+  assert.equal(l.show, 'all');
+  assert.equal(l.unit, 'in');
+  assert.equal(normLayout({ preset: 'nope', pageW: 7, pageH: 9 }).preset, 'custom');
+  assert.equal(normLayout({ preset: 'custom', pageW: 1, pageH: 500 }).pageW, 2);
+  assert.equal(normLayout({}).preset, 'letter');
+  assert.equal(layoutSheet({ preset: 'custom', pageW: 2, pageH: 2, margin: 0.9 }).ok, false, 'no room is reported');
+});
+
+test('sheet pages: @page size, paging, crop, titles and numbers', () => {
+  assert.equal(pageStyle({ preset: 'wristband' }), '@page{size:5in 3in;margin:0}');
+  assert.equal(pageStyle({ preset: 'custom', pageW: 4.25, pageH: 5.5 }), '@page{size:4.25in 5.5in;margin:0}');
+  const plays = [];
+  for (let i = 0; i < 5; i++) {
+    const p = newPlay(`Play <${i}>`);
+    plays.push(p);
+  }
+  const html = sheetHTML(plays, { preset: 'letter', mode: 'grid', cols: 2, rows: 1, numbers: true, title: true });
+  assert.equal((html.match(/class="sheet-page"/g) || []).length, 3, '5 plays at 2 per page is 3 pages');
+  assert.equal((html.match(/class="cell/g) || []).length, 5);
+  assert.ok(html.includes('1. Play &lt;0&gt;') && html.includes('5. Play &lt;4&gt;'), 'numbered and escaped titles');
+  assert.ok(!html.includes('<0>'), 'names are escaped');
+  const bare = sheetHTML(plays.slice(0, 1), { numbers: false, title: false, border: false });
+  assert.ok(!bare.includes('>Play &lt;0&gt;</text>') && !bare.includes('bordered'), 'no title text, no border');
+  const nums = sheetHTML(plays.slice(0, 1), { numbers: true, title: false });
+  assert.ok(nums.includes('>1</text>'), 'number-only chip');
+  const vbw = (h) => Number(h.match(/viewBox="[^ ]+ [^ ]+ ([^ ]+)/)[1]);
+  assert.ok(vbw(sheetHTML(plays.slice(0, 1), { crop: true })) < vbw(sheetHTML(plays.slice(0, 1), { crop: false })), 'crop zooms in');
+  const defOnly = sheetHTML(plays.slice(0, 1), { show: 'def' });
+  assert.ok(defOnly.includes('DEFENSE'));
+});
+
+test('saved sheets validate, and units convert both ways', () => {
+  const s = validateSheet({ id: 'zz', name: 'x'.repeat(200), plays: ['a', 5, 'b', null], layout: { cols: 4 } });
+  assert.equal(s.name.length, 60);
+  assert.deepEqual(s.plays, ['a', 'b']);
+  assert.equal(s.layout.cols, 4);
+  assert.throws(() => validateSheet(null));
+  assert.equal(newSheet('A', ['q']).plays[0], 'q');
+  assert.equal(toUnit(2.54, 'cm'), 6.45);
+  assert.ok(Math.abs(fromUnit(10, 'cm') - 3.937) < 0.001);
 });

@@ -66,3 +66,42 @@ export function outSign(playerX, fieldWidth, flip = false) {
   const s = Math.abs(dx) < 0.01 ? 1 : dx < 0 ? -1 : 1;
   return flip ? -s : s;
 }
+
+
+// ---- defensive zones ---------------------------------------------------------
+// A zone is an ellipse the defender drops to. `fr` lists the usual lateral
+// centres as fractions of the field width; the nearest one to the defender is
+// used (or the slot given when several defenders share a preset).
+const zp = (id, name, fr, depth, rx, ry, label) => ({ id, name, fr, depth, rx, ry, label });
+
+export const ZONE_PRESETS = [
+  zp('z-flat', 'Flat', [0.14, 0.86], 4, (W) => Math.max(3, W * 0.11), 3.2, 'Flat'),
+  zp('z-hook', 'Hook / curl', [0.3, 0.5, 0.7], 8.5, (W) => Math.max(3.5, W * 0.115), 3.4, 'Hook'),
+  zp('z-third', 'Deep third', [1 / 6, 0.5, 5 / 6], 15, (W) => W / 6 - 0.4, 5, 'Deep 1/3'),
+  zp('z-half', 'Deep half', [0.25, 0.75], 15, (W) => W / 4 - 0.4, 5.5, 'Deep 1/2'),
+  zp('z-quarter', 'Deep quarter', [0.125, 0.375, 0.625, 0.875], 15, (W) => W / 8 - 0.3, 5.5, 'Deep 1/4'),
+];
+
+export const ZONE_MAP = Object.fromEntries(ZONE_PRESETS.map((z) => [z.id, z]));
+export const ZONE_LIMITS = Object.freeze({ min: 1.5, max: 30 });
+
+const clampN = (v, lo, hi) => Math.min(Math.max(lo, hi), Math.max(lo, v));
+
+// Builds {points:[centre relative to the player], rx, ry, label} for a zone
+// preset. `field` is {width,length,backfield}; `slot` picks a specific
+// fraction (else the one nearest the player).
+export function buildZone(id, player, field, slot = null) {
+  const z = ZONE_MAP[id];
+  if (!z) return null;
+  const W = field.width;
+  const rx = r1(clampN(typeof z.rx === 'function' ? z.rx(W) : z.rx, 1.5, W / 2));
+  const ry = r1(z.ry);
+  let fr;
+  if (slot !== null && z.fr[slot] !== undefined) fr = z.fr[slot];
+  else fr = z.fr.reduce((best, f) => (Math.abs(f * W - player.x) < Math.abs(best * W - player.x) ? f : best), z.fr[0]);
+  const cx = clampN(fr * W, rx, W - rx);
+  const yMin = -field.backfield;
+  const yMax = field.length - field.backfield;
+  const cy = clampN(z.depth, yMin + ry, yMax - ry);
+  return { points: [{ x: r1(cx - player.x), y: r1(cy - player.y) }], rx, ry, label: z.label };
+}

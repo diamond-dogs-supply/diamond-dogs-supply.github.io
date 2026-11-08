@@ -5,7 +5,7 @@
 // LOS, positive is downfield, negative is the backfield. Route points are
 // stored relative to their player so routes travel with the player.
 
-import { PRESET_MAP } from './routes.js';
+import { PRESET_MAP, ZONE_MAP, ZONE_LIMITS } from './routes.js';
 import { OFFENSE_LABELS, DEFENSE_LABELS, formationPlayers } from './formations.js';
 
 export { OFFENSE_LABELS, DEFENSE_LABELS };
@@ -14,7 +14,8 @@ export const SCHEMA = 1;
 export const FIELD_DEFAULT = Object.freeze({ width: 40, length: 35, backfield: 10 });
 export const FIELD_LIMITS = Object.freeze({ width: [15, 60], length: [20, 80], backfield: [4, 20] });
 export const END_STYLES = ['arrow', 'T', 'dot', 'none'];
-export const ROUTE_KINDS = ['route', 'motion'];
+export const ROUTE_KINDS = ['route', 'motion', 'zone'];
+export const kindsFor = (side) => (side === 'D' ? ['zone', 'route'] : ['route', 'motion']);
 export const ROUTE_COLORS = [null, '#111111', '#1565c0', '#c62828', '#2e7d32', '#ef6c00', '#6a1b9a', '#00838f'];
 
 const MAX_PLAYERS_PER_SIDE = 15;
@@ -65,10 +66,12 @@ export function makeRoute(playerId, kind) {
     flip: false,
     curve: false,
     dash: kind === 'motion',
-    end: 'arrow',
+    end: kind === 'zone' ? 'none' : 'arrow',
     color: null,
     order: 0,
     points: [],
+    zone: null, // {rx, ry} half-axes in yards, only for kind 'zone'
+    label: '',
   };
 }
 
@@ -95,6 +98,13 @@ export function findPlayer(play, id) {
 
 export function findRoute(play, playerId, kind) {
   return play.routes.find((r) => r.playerId === playerId && r.kind === kind) || null;
+}
+
+// Absolute centre of a zone route, or null.
+export function zoneCenter(play, route) {
+  const player = findPlayer(play, route.playerId);
+  if (!player || route.kind !== 'zone' || !route.points.length) return null;
+  return { x: player.x + route.points[0].x, y: player.y + route.points[0].y };
 }
 
 // Where a route begins. A route that follows pre-snap motion starts where the
@@ -153,22 +163,34 @@ export function validatePlay(raw) {
     const kind = ROUTE_KINDS.includes(rr.kind) ? rr.kind : 'route';
     const key = rr.playerId + '|' + kind;
     if (seen.has(key)) continue;
-    seen.add(key);
+    const owner = play.players.find((pl) => pl.id === rr.playerId);
+    if (kind === 'zone' && owner.side !== 'D') continue; // zones are a defensive tool
     const route = makeRoute(rr.playerId, kind);
     route.id = str(rr.id, 24) || route.id;
-    route.preset = PRESET_MAP[rr.preset] ? rr.preset : 'custom';
+    route.preset = (kind === 'zone' ? ZONE_MAP : PRESET_MAP)[rr.preset] ? rr.preset : 'custom';
     route.edited = !!rr.edited;
     route.depth = clamp(num(rr.depth, 0), 0, 60);
     route.length = clamp(num(rr.length, 0), 0, 60);
     route.flip = !!rr.flip;
     route.curve = !!rr.curve;
     route.dash = rr.dash === undefined ? kind === 'motion' : !!rr.dash;
-    route.end = END_STYLES.includes(rr.end) ? rr.end : 'arrow';
+    route.end = END_STYLES.includes(rr.end) ? rr.end : route.end;
     route.color = isColor(rr.color) ? rr.color : null;
     route.order = Math.round(clamp(num(rr.order, 0), 0, 9));
     route.points = (Array.isArray(rr.points) ? rr.points : [])
       .slice(0, MAX_POINTS)
       .map((pt) => ({ x: r1(clamp(num(pt && pt.x, 0), -120, 120)), y: r1(clamp(num(pt && pt.y, 0), -120, 120)) }));
+    if (kind === 'zone') {
+      if (!route.points.length) continue; // a zone needs its centre
+      route.points = route.points.slice(0, 1);
+      const zr = rr.zone && typeof rr.zone === 'object' ? rr.zone : {};
+      route.zone = {
+        rx: r1(clamp(num(zr.rx, 5), ZONE_LIMITS.min, ZONE_LIMITS.max)),
+        ry: r1(clamp(num(zr.ry, 4), ZONE_LIMITS.min, ZONE_LIMITS.max)),
+      };
+      route.label = str(rr.label, 10);
+    }
+    seen.add(key);
     play.routes.push(route);
   }
   return play;

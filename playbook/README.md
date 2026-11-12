@@ -14,6 +14,10 @@ and needs no build step or server: plain JavaScript modules and an SVG field.
 - Field width, length and backfield depth are configurable. Position labels are editable (defaults are letters).
 - Plays autosave in the browser. **Save file** writes a `.play.json`, **Export playbook** writes a `.playbook.json`, **Share link** puts the play in the URL, **Print** gives one play per page with the title in the corner.
 
+## Library
+
+The **Library** button opens the Diamond Dawgs playbook (12 offensive plays, 4 defensive patterns) and a set of concept diagrams (Smash, Curl-Flat, Snag, Stick, Mesh, Flood, Four Verticals, bunch and trips ideas, plus defensive zone pieces). Concepts show only the players and routes that matter. Any entry can be opened as a new play, flipped left to right, or mixed into the play you are editing (take the right or left half, only routes or only zones). The data lives in `js/library-data.js`; `js/library.js` builds and mixes entries.
+
 ## Layout
 
 | File | Role |

@@ -9,6 +9,7 @@ import { loadLibrary, saveLibrary } from './storage.js';
 import { codeFromHash, decodePlay, encodePlay } from './share.js';
 import { downloadBlob, downloadText, slug, svgToPngBlob } from './export.js';
 import { initSheets } from './sheets-ui.js';
+import { initLibrary } from './library-ui.js';
 
 const $ = (id) => document.getElementById(id);
 const svg = $('field');
@@ -576,6 +577,14 @@ $('btn-print-all').addEventListener('click', () => printPlays(allPlays()));
 const sheets = initSheets({ getPlays: allPlays, toast, printRoot: $('print-root') });
 $('btn-sheets').addEventListener('click', () => sheets.open());
 $('btn-sheets2').addEventListener('click', () => sheets.open());
+
+const library = initLibrary({
+	getEditor: () => ed,
+	addPlay: (p) => { persist(); lib.plays.push(p); ed.loadPlay(clonePlay(p)); persist(); },
+	addPlays: (list) => { persist(); lib.plays.push(...list); saveLibrary(lib); renderPlays(); },
+	toast,
+});
+$('btn-library').addEventListener('click', () => library.open());
 
 $('btn-png').addEventListener('click', async () => {
 	try {

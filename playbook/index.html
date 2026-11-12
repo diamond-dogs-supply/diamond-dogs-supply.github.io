@@ -25,6 +25,7 @@
 			<span class="sep edit-only"></span>
 			<button id="btn-share" type="button" class="primary">Share link</button>
 			<button id="btn-print" type="button" title="Print or save as PDF">Print</button>
+			<button id="btn-library" type="button" title="Browse route concepts and the Diamond Dawgs playbook">Library</button>
 			<button id="btn-sheets" type="button" title="Print a list of plays on a page or wristband card of any size">Sheets</button>
 			<button id="btn-png" type="button">PNG</button>
 			<button id="btn-save" type="button" title="Download this play as a .play.json file">Save file</button>
@@ -125,6 +126,41 @@
 				<button value="close">Close</button>
 			</div>
 		</form>
+	</dialog>
+
+	<dialog id="lib-dialog">
+		<div class="sh-head">
+			<h2>Play library</h2>
+			<button type="button" id="lib-close">Close</button>
+		</div>
+		<div class="lib-bar">
+			<div id="lib-colls" class="chips">
+				<button type="button" class="chip on" data-v="playbook">Diamond Dawgs playbook</button>
+				<button type="button" class="chip" data-v="concepts">Concepts and combos</button>
+			</div>
+			<input id="lib-search" type="text" placeholder="Search" aria-label="Search the library" autocomplete="off">
+			<span id="lib-count" class="muted"></span>
+		</div>
+		<div id="lib-cats" class="chips"></div>
+		<div id="lib-beats" class="chips"></div>
+		<div class="lib-body">
+			<div id="lib-grid" class="lib-grid"></div>
+			<aside id="lib-detail" class="lib-detail" hidden>
+				<h3 id="lib-d-title"></h3>
+				<div id="lib-d-svg" class="lib-d-svg"></div>
+				<label class="check"><input id="lib-flip" type="checkbox"> Flip left to right</label>
+				<div id="lib-d-notes" class="lib-notes"></div>
+				<div class="row"><button id="lib-open" type="button" class="primary">Open as new play</button></div>
+				<fieldset class="lib-mix">
+					<legend>Add pieces to the play I'm editing</legend>
+					<label>Take <select id="lib-parts"><option value="all">routes and zones</option><option value="off">offense routes only</option><option value="def">defense zones only</option></select></label>
+					<label>Side <select id="lib-half"><option value="all">both sides</option><option value="right">right side</option><option value="left">left side</option></select></label>
+					<label class="check"><input id="lib-align" type="checkbox" checked> Move matching players to the example's spots</label>
+					<button id="lib-mix" type="button">Add to current play</button>
+				</fieldset>
+			</aside>
+		</div>
+		<div class="row"><button id="lib-all" type="button">Add the whole playbook to My plays</button></div>
 	</dialog>
 
 	<dialog id="sheet-dialog">

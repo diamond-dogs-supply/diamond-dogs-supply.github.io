@@ -3,8 +3,8 @@
 // in inches (the dialog converts for display), so the maths stays in one unit.
 // Pure functions: no DOM, so the layout can be tested in Node.
 
-import { clamp, num, uid } from './model.js';
-import { esc, playToSVG } from './render.js';
+import { clamp, num, routeStart, uid } from './model.js';
+import { esc, playToSVG, viewFor } from './render.js';
 
 export const SHEET_SCHEMA = 1;
 export const MAX_SHEET_PLAYS = 200;
@@ -148,7 +148,70 @@ export function pageStyle(layoutIn) {
 // still ends on the 10 yard line, the lines are just closer together. Tall
 // cells are left alone: the diagram simply gets more room downfield. Never
 // squeezes the deep part below 30% or the near part below 65%.
-function cellSVG(play, n, L, aspect, cellW) {
+// Spreads players and routes sideways (up to 35%, and never past the field) so
+// a play fills a wide cell. Positions only: circles and letters keep their size.
+export function stretchX(play, kx) {
+  const q = JSON.parse(JSON.stringify(play));
+  const cx = q.field.width / 2;
+  for (const p of q.players) p.x = cx + (p.x - cx) * kx;
+  for (const r of q.routes) {
+    for (const pt of r.points) pt.x *= kx;
+    if (r.zone) r.zone.rx *= kx;
+  }
+  return q;
+}
+
+// The biggest sideways stretch that keeps every player, route point and zone on the field.
+function maxStretch(play) {
+  const W = play.field.width;
+  const cx = W / 2;
+  let k = 1.35;
+  const need = (dx) => {
+    const d = Math.abs(dx);
+    if (d > 0.01) k = Math.min(k, (cx - 0.8) / d);
+  };
+  const pl = new Map(play.players.map((p) => [p.id, p]));
+  for (const p of play.players) need(p.x - cx);
+  for (const r of play.routes) {
+    const p = pl.get(r.playerId);
+    if (!p) continue;
+    if (r.kind === 'zone' && r.points.length) {
+      need(p.x + r.points[0].x - cx);
+      need(Math.abs(p.x + r.points[0].x - cx) + (r.zone ? r.zone.rx : 0));
+    } else {
+      const s = routeStart(play, r);
+      for (const pt of r.points) need(s.x + pt.x - cx);
+    }
+  }
+  return Math.max(1, k);
+}
+
+function fillWidth(play, L, aspect) {
+  if (!L.fit || !L.crop) return play;
+  const vopts = { show: L.show, title: L.title || L.numbers };
+  const shape = (p) => {
+    const v = viewFor(p, vopts);
+    return v.w / v.h;
+  };
+  if (shape(play) >= aspect * 0.97) return play;
+  const kmax = maxStretch(play);
+  if (kmax <= 1.01) return play;
+  let lo = 1;
+  let hi = kmax;
+  let best = play;
+  for (let i = 0; i < 7; i++) {
+    const mid = (lo + hi) / 2;
+    const cand = stretchX(play, mid);
+    if (shape(cand) < aspect) {
+      best = cand;
+      lo = mid;
+    } else hi = mid;
+  }
+  return best;
+}
+
+function cellSVG(playIn, n, L, aspect, cellW) {
+  const play = fillWidth(playIn, L, aspect);
   let titleText;
   if (L.title && L.numbers) titleText = `${n}. ${play.name || 'Untitled play'}`;
   else if (L.numbers) titleText = String(n);

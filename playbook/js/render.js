@@ -244,31 +244,36 @@ function drawPlayer(p, g, th, opts) {
   return out + '</g>';
 }
 
-function drawField(g, th, view, topYard) {
+function drawField(g, th, view, topYard, fill) {
   const { W, L, B, sy } = g;
+  // fill: the grass runs the full width of the box (small print cells), instead of stopping at the sidelines
+  const X0 = fill ? view.x - 1 : 0;
+  const X1 = fill ? view.x + view.w + 1 : W;
+  const LX = fill ? view.x + 1.1 : 1.1;
+  const RX = fill ? view.x + view.w - 1.1 : W - 1.1;
   const yMaxLine = Math.min(L - B, topYard === undefined ? Infinity : topYard);
   const fieldTop = sy(yMaxLine);
   let out = `<rect x="${f(view.x)}" y="${f(view.y)}" width="${f(view.w)}" height="${f(view.h)}" fill="${th.page}"/>`;
-  out += `<rect x="0" y="${f(fieldTop)}" width="${W}" height="${f(L - fieldTop)}" fill="${th.field}" stroke="${th.border}" stroke-width="0.3"/>`;
+  out += `<rect x="${f(X0)}" y="${f(fieldTop)}" width="${f(X1 - X0)}" height="${f(L - fieldTop)}" fill="${th.field}" stroke="${th.border}" stroke-width="0.3"/>`;
   const yMin = -B;
   const yMax = yMaxLine;
   for (let y = Math.ceil(yMin); y <= yMax; y++) {
     if (y === 0) continue;
     const yy = f(sy(y));
     if (y % 5 === 0) {
-      out += `<line x1="0" y1="${yy}" x2="${W}" y2="${yy}" stroke="${th.line}" stroke-width="0.14"/>`;
+      out += `<line x1="${f(X0)}" y1="${yy}" x2="${f(X1)}" y2="${yy}" stroke="${th.line}" stroke-width="0.14"/>`;
       if (y > 0) {
-        out += `<text x="1.1" y="${f(sy(y) - 0.3)}" font-family="${FONT}" font-size="0.9" font-weight="700" fill="${th.num}">${y}</text>`;
-        out += `<text x="${f(W - 1.1)}" y="${f(sy(y) - 0.3)}" text-anchor="end" font-family="${FONT}" font-size="0.9" font-weight="700" fill="${th.num}">${y}</text>`;
+        out += `<text x="${f(LX)}" y="${f(sy(y) - 0.3)}" font-family="${FONT}" font-size="0.9" font-weight="700" fill="${th.num}">${y}</text>`;
+        out += `<text x="${f(RX)}" y="${f(sy(y) - 0.3)}" text-anchor="end" font-family="${FONT}" font-size="0.9" font-weight="700" fill="${th.num}">${y}</text>`;
       }
     } else {
-      out += `<line x1="0" y1="${yy}" x2="0.8" y2="${yy}" stroke="${th.tick}" stroke-width="0.1"/>`;
-      out += `<line x1="${W - 0.8}" y1="${yy}" x2="${W}" y2="${yy}" stroke="${th.tick}" stroke-width="0.1"/>`;
+      out += `<line x1="${f(X0)}" y1="${yy}" x2="${f(X0 + 0.8)}" y2="${yy}" stroke="${th.tick}" stroke-width="0.1"/>`;
+      out += `<line x1="${f(X1 - 0.8)}" y1="${yy}" x2="${f(X1)}" y2="${yy}" stroke="${th.tick}" stroke-width="0.1"/>`;
     }
   }
   const los = f(sy(0));
-  out += `<line x1="0" y1="${los}" x2="${W}" y2="${los}" stroke="${th.los}" stroke-width="0.3" stroke-dasharray="1.2 0.7"/>`;
-  out += `<text x="${f(W - 1.1)}" y="${f(sy(0) + 1.1)}" text-anchor="end" font-family="${FONT}" font-size="0.8" font-weight="700" fill="${th.num}">LOS</text>`;
+  out += `<line x1="${f(X0)}" y1="${los}" x2="${f(X1)}" y2="${los}" stroke="${th.los}" stroke-width="0.3" stroke-dasharray="1.2 0.7"/>`;
+  out += `<text x="${f(RX)}" y="${f(sy(0) + 1.1)}" text-anchor="end" font-family="${FONT}" font-size="0.8" font-weight="700" fill="${th.num}">LOS</text>`;
   return out;
 }
 
@@ -288,7 +293,7 @@ export function svgInner(play, opts = {}) {
   const show = opts.show || 'all';
   const g = geom(play);
   const view = opts.view || (opts.crop ? viewFor(play, opts) : fullView(g));
-  let out = drawField(g, th, view, opts.topYard);
+  let out = drawField(g, th, view, opts.topYard, opts.fillView);
 
   if (opts.title !== false) {
     out += chip(Math.max(view.x + 0.8, 0.8), Math.max(view.y + 0.8, 0.8), opts.titleText != null ? String(opts.titleText) : play.name || 'Untitled play', 1.5 * (opts.glyph || 1), th, false, Math.max(8, view.w - 15 * (opts.glyph || 1)));
@@ -379,5 +384,5 @@ export function playToSVG(play, opts = {}) {
   let size = null;
   if (opts.widthPx) size = { width: opts.widthPx, height: Math.round((opts.widthPx * view.h) / view.w) };
   const label = `Play diagram: ${play.name || 'Untitled play'}`;
-  return `<svg ${svgOpenAttrs(play, size, view)} role="img" aria-label="${esc(label)}">${svgInner(play, { ...opts, view, glyph, topYard, editor: false })}</svg>`;
+  return `<svg ${svgOpenAttrs(play, size, view)} role="img" aria-label="${esc(label)}">${svgInner(play, { ...opts, view, glyph, topYard, fillView: !!(opts.crop && opts.trim), editor: false })}</svg>`;
 }

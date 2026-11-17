@@ -12,7 +12,7 @@ import { Editor } from '../js/state.js';
 import { encodePlay, decodePlay, codeFromHash, pack } from '../js/share.js';
 import { playToSVG, svgInner, viewFor } from '../js/render.js';
 import { formationPlayers } from '../js/formations.js';
-import { layoutSheet, normLayout, pageCount, pageStyle, sheetHTML, validateSheet, newSheet, toUnit, fromUnit } from '../js/sheet.js';
+import { stretchX, layoutSheet, normLayout, pageCount, pageStyle, sheetHTML, validateSheet, newSheet, toUnit, fromUnit } from '../js/sheet.js';
 
 const byLabel = (play, side, label) => play.players.find((p) => p.side === side && p.label === label);
 
@@ -574,4 +574,15 @@ test('cut-out cards: wristband cards on letter landscape', () => {
   assert.equal((html.match(/class="card"/g) || []).length, 4 + 1); // 16 on page one, 2 on page two (one card)
   assert.match(pageStyle(L), /11in 8\.5in/);
   assert.equal(normLayout({ mode: 'cards' }).mode, 'cards');
+});
+
+test('stretching sideways never puts a player off the field, and trimmed cells fill the box edge to edge', () => {
+  const play = newPlay();
+  const st = stretchX(play, 1.3);
+  assert.equal(st.players.length, play.players.length);
+  assert.ok(Math.max(...st.players.map((p) => p.x)) > Math.max(...play.players.map((p) => p.x)));
+  const svg = playToSVG(play, { theme: 'print', crop: true, trim: true });
+  const vbx = Number(/viewBox="(-?[0-9.]+)/.exec(svg)[1]);
+  const grass = /<rect x="(-?[0-9.]+)" y="[0-9.]+" width="[0-9.]+" height="[0-9.]+" fill="#ffffff" stroke/.exec(svg);
+  assert.ok(grass && Number(grass[1]) < vbx, 'the grass starts left of the visible area');
 });

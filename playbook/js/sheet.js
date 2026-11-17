@@ -30,6 +30,7 @@ export const SHEET_DEFAULT = Object.freeze({
   mode: 'grid', // 'grid' = fill the page with cols x rows, 'fixed' = every play is cellW x cellH
   cols: 3,
   rows: 4,
+  maxPer: 0, // 0 = as many as fit; otherwise stop after this many plays per page
   cellW: 2.4,
   cellH: 1.7,
   title: true,
@@ -64,6 +65,7 @@ export function normLayout(raw = {}) {
     mode: raw.mode === 'fixed' ? 'fixed' : 'grid',
     cols: Math.round(clamp(num(raw.cols, d.cols), 1, 8)),
     rows: Math.round(clamp(num(raw.rows, d.rows), 1, 10)),
+    maxPer: Math.round(clamp(num(raw.maxPer, d.maxPer), 0, 80)),
     cellW: round(clamp(num(raw.cellW, d.cellW), 0.8, 40)),
     cellH: round(clamp(num(raw.cellH, d.cellH), 0.6, 40)),
     title: raw.title === undefined ? d.title : !!raw.title,
@@ -96,7 +98,7 @@ export function layoutSheet(layoutIn) {
     cellH = (usableH - L.gap * (rows - 1)) / rows;
   }
   const ok = usableW > 0.5 && usableH > 0.5 && cellW >= 0.5 && cellH >= 0.4;
-  return { layout: L, cols, rows, cellW: round(cellW), cellH: round(cellH), perPage: cols * rows, usableW: round(usableW), usableH: round(usableH), ok };
+  return { layout: L, cols, rows, cellW: round(cellW), cellH: round(cellH), perPage: L.maxPer > 0 ? Math.min(L.maxPer, cols * rows) : cols * rows, fit: cols * rows, usableW: round(usableW), usableH: round(usableH), ok };
 }
 
 export function pageCount(nPlays, perPage) {

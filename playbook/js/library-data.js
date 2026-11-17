@@ -378,18 +378,20 @@ export const ENTRIES = [
     ],
   },
   {
-    id: 'p-07', num: 7, kind: 'play', cat: 'Offense', name: 'Drive',
-    short: 'A dig over a shallow cross: the high-low read on the middle defender. Great against four deep.',
+    id: 'p-07', num: 7, kind: 'play', cat: 'Offense', name: 'Red zone fade-slant',
+    short: 'Red zone and 2-point play: a back-corner fade and a flat on the right, double slants on the left. Everything is inside 8 yards.',
     points: [
-      'Formation 2x2. Z dig at 12 (1), H shallow cross at 2 (2), F swing (3).',
-      'Backside X runs a post and Y a curl.',
-      'If the hook defender sinks, throw the shallow; if he stays shallow, throw the dig.',
+      'Formation 2x2. Z fades to the back corner (1), H runs a short out at 3 yards into the flat (2).',
+      'Left side double slants: Y slants at 1 yard (3), X slants at 2 (4). F swings out to the left as the hot throw (5).',
+      'Against man, throw the fade to Z and let him go get it. Against zone, the flat and the slants get open: take the first one that is open.',
+      'Short field: the first read is decided in two steps, so Q should throw on time.',
     ],
-    beats: ['Cover 4', 'Man', 'Zone'],
+    beats: ['Man', 'Cover 3', 'Zone'],
     off: '2x2',
     routes: [
-      ['Z', 'dig', { depth: 12, length: 10, order: 1 }], ['H', 'drag', { depth: 2, length: 10, order: 2 }], ['F', 'swing', { order: 3, hot: true }],
-      ['X', 'post', { depth: 10, length: 8 }], ['Y', 'curl', { depth: 10, order: 4 }],
+      ['Z', 'fade', { depth: 7, length: 4, order: 1 }], ['H', 'out', { depth: 3, length: 4, order: 2 }],
+      ['Y', 'slant', { depth: 1, length: 4, order: 3 }], ['X', 'slant', { depth: 2, length: 5, order: 4 }],
+      ['F', 'swing', { length: 6, flip: true, order: 5, hot: true }],
     ],
   },
   {

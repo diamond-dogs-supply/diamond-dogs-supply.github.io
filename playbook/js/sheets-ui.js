@@ -61,7 +61,7 @@ export function initSheets({ getPlays, toast, printRoot }) {
     set('cols', L.cols, 1);
     set('rows', L.rows, 1);
     set('maxper', L.maxPer || '', 1);
-    for (const k of ['title', 'numbers', 'border', 'crop', 'order']) $('sh-' + k).checked = L[k];
+    for (const k of ['title', 'numbers', 'border', 'crop', 'order', 'fit']) $('sh-' + k).checked = L[k];
     $('sh-show').value = L.show;
     for (const b of dlg.querySelectorAll('[data-mode]')) b.classList.toggle('on', b.dataset.mode === L.mode);
     $('sh-grid-row').hidden = L.mode !== 'grid';
@@ -248,7 +248,7 @@ export function initSheets({ getPlays, toast, printRoot }) {
   }
   $('sh-maxper').addEventListener('change', (e) => patchLayout({ maxPer: Number(e.target.value) || 0 }));
   for (const b of dlg.querySelectorAll('[data-mode]')) b.addEventListener('click', () => patchLayout({ mode: b.dataset.mode }));
-  for (const k of ['title', 'numbers', 'border', 'crop', 'order']) $('sh-' + k).addEventListener('change', (e) => patchLayout({ [k]: e.target.checked }));
+  for (const k of ['title', 'numbers', 'border', 'crop', 'order', 'fit']) $('sh-' + k).addEventListener('change', (e) => patchLayout({ [k]: e.target.checked }));
   $('sh-show').addEventListener('change', (e) => patchLayout({ show: e.target.value }));
 
   $('sh-print').addEventListener('click', () => {

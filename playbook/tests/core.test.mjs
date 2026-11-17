@@ -12,7 +12,7 @@ import { Editor } from '../js/state.js';
 import { encodePlay, decodePlay, codeFromHash, pack } from '../js/share.js';
 import { playToSVG, svgInner, viewFor } from '../js/render.js';
 import { formationPlayers } from '../js/formations.js';
-import { layoutSheet, normLayout, pageCount, pageStyle, sheetHTML, validateSheet, newSheet, toUnit, fromUnit } from '../js/sheet.js';
+import { fitToCell, squeezePlay, layoutSheet, normLayout, pageCount, pageStyle, sheetHTML, validateSheet, newSheet, toUnit, fromUnit } from '../js/sheet.js';
 
 const byLabel = (play, side, label) => play.players.find((p) => p.side === side && p.label === label);
 
@@ -542,4 +542,17 @@ test('plays per page can be capped to any number, odd or even', () => {
   assert.equal(layoutSheet({ ...base, maxPer: 99 }).perPage, 4);
   const plays = Array.from({ length: 7 }, (_, i) => newPlay('P' + i));
   assert.equal((sheetHTML(plays, { ...base, maxPer: 3 }).match(/class="sheet-page"/g) || []).length, 3);
+});
+
+test('fitToCell squeezes a play to match a wide cell and keeps everything on the field', () => {
+  const play = newPlay();
+  const L = normLayout({ crop: true, fit: true, title: false, numbers: false });
+  const fitted = fitToCell(play, L, 1.97);
+  const v0 = viewFor(play, { title: false });
+  const v1 = viewFor(fitted, { title: false });
+  assert.ok(v1.w / v1.h > v0.w / v0.h, 'view gets wider relative to its height');
+  assert.equal(fitToCell(play, normLayout({ fit: false }), 1.97), play);
+  for (const p of fitted.players) assert.ok(p.x >= 0 && p.x <= fitted.field.width);
+  const sq = squeezePlay(play, 1, 0.5);
+  assert.equal(sq.players.length, play.players.length);
 });

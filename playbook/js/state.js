@@ -31,7 +31,7 @@ export function closestOnSegment(a, b, p) {
 export class Editor {
   constructor(play) {
     this.play = play;
-    this.ui = { sel: { playerId: null, kind: 'route', point: null }, show: 'all', snap: true, draw: false };
+    this.ui = { sel: { playerId: null, kind: 'route', point: null }, show: 'all', snap: true, draw: false, order: true };
     this.undoStack = [];
     this.redoStack = [];
     this.listeners = new Set();
@@ -212,6 +212,11 @@ export class Editor {
     const p = this.player(this.ui.sel.playerId);
     if (p && !isVisible(this.ui.show, p.side)) this.ui.sel = { playerId: null, kind: this.ui.sel.kind, point: null };
     this.fixSelection();
+    this.emit('full');
+  }
+
+  setOrder(on) {
+    this.ui.order = !!on;
     this.emit('full');
   }
 

@@ -36,6 +36,7 @@ export const SHEET_DEFAULT = Object.freeze({
   numbers: true,
   border: true,
   crop: true,
+  order: true,
   show: 'all',
 });
 
@@ -69,6 +70,7 @@ export function normLayout(raw = {}) {
     numbers: raw.numbers === undefined ? d.numbers : !!raw.numbers,
     border: raw.border === undefined ? d.border : !!raw.border,
     crop: raw.crop === undefined ? d.crop : !!raw.crop,
+    order: raw.order === undefined ? d.order : !!raw.order,
     show: ['all', 'off', 'def'].includes(raw.show) ? raw.show : 'all',
   };
 }
@@ -114,6 +116,7 @@ function cellSVG(play, n, L, aspect, cellW) {
   return playToSVG(play, {
     theme: 'print',
     show: L.show,
+    order: L.order,
     crop: L.crop,
     aspect,
     title: L.title || L.numbers,

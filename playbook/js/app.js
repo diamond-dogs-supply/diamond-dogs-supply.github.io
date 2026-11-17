@@ -108,7 +108,7 @@ function allPlays() {
 function renderField() {
 	const g = geom(ed.play);
 	svg.setAttribute('viewBox', g.vb);
-	svg.innerHTML = svgInner(ed.play, { theme: 'screen', show: ed.ui.show, editor: !readOnly, sel: ed.ui.sel, draw: ed.ui.draw });
+	svg.innerHTML = svgInner(ed.play, { theme: 'screen', show: ed.ui.show, order: ed.ui.order, editor: !readOnly, sel: ed.ui.sel, draw: ed.ui.draw });
 }
 
 function toField(e) {
@@ -466,6 +466,7 @@ for (const key of ['width', 'length', 'backfield']) {
 bindLive($('play-name'), (v) => ed.setMeta('name', v));
 bindLive($('play-notes'), (v) => ed.setMeta('notes', v));
 bindLive($('play-tags'), (v) => ed.setMeta('tags', v));
+$('show-order').addEventListener('change', (e) => ed.setOrder(e.target.checked));
 $('snap').addEventListener('change', (e) => ed.setSnap(e.target.checked));
 for (const b of document.querySelectorAll('[data-show]')) b.addEventListener('click', () => ed.setShow(b.dataset.show));
 
@@ -528,6 +529,7 @@ function renderPanels() {
 	$('btn-redo').disabled = !ed.canRedo;
 	for (const b of document.querySelectorAll('[data-show]')) b.classList.toggle('on', b.dataset.show === ed.ui.show);
 	$('snap').checked = ed.ui.snap;
+	$('show-order').checked = ed.ui.order;
 	const off = ed.play.players.filter((p) => p.side === 'O').length;
 	const def = ed.play.players.length - off;
 	$('counts').textContent = `Offense ${off} · Defense ${def} · Field ${ed.play.field.width} × ${ed.play.field.length} yd`;
@@ -557,7 +559,7 @@ $('btn-mirror').addEventListener('click', () => ed.mirror());
 
 function buildSheet(play) {
 	const notes = play.notes ? `<p class="sheet-notes">${esc(play.notes)}</p>` : '';
-	return `<section class="sheet"><div class="sheet-fig">${playToSVG(play, { theme: 'print', show: ed.ui.show })}</div>${notes}</section>`;
+	return `<section class="sheet"><div class="sheet-fig">${playToSVG(play, { theme: 'print', show: ed.ui.show, order: ed.ui.order })}</div>${notes}</section>`;
 }
 
 function printPlays(plays) {
@@ -591,7 +593,7 @@ $('btn-png').addEventListener('click', async () => {
 		const g = geom(ed.play);
 		const w = 1600;
 		const h = Math.round((w * g.vbH) / g.vbW);
-		const markup = playToSVG(ed.play, { theme: 'print', show: ed.ui.show, widthPx: w });
+		const markup = playToSVG(ed.play, { theme: 'print', show: ed.ui.show, order: ed.ui.order, widthPx: w });
 		downloadBlob(await svgToPngBlob(markup, w, h), `${slug(ed.play.name)}.png`);
 	} catch (err) {
 		toast(err.message || 'PNG export failed');

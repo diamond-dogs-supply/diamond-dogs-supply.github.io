@@ -44,6 +44,7 @@
 					<button type="button" data-show="off">Offense</button>
 					<button type="button" data-show="def">Defense</button>
 				</div>
+				<label class="check" title="Show or hide the read-order numbers at the end of each route"><input id="show-order" type="checkbox" checked> Route numbers</label>
 				<label class="check edit-only"><input id="snap" type="checkbox" checked> Snap to half yard</label>
 				<span id="counts" class="counts"></span>
 			</div>
@@ -217,6 +218,7 @@
 						<label><input type="checkbox" id="sh-numbers"> Numbers</label>
 						<label><input type="checkbox" id="sh-border"> Borders</label>
 						<label><input type="checkbox" id="sh-crop"> Zoom to the action</label>
+						<label><input type="checkbox" id="sh-order"> Route numbers</label>
 						<label>Show <select id="sh-show"><option value="all">Offense and defense</option><option value="off">Offense only</option><option value="def">Defense only</option></select></label>
 					</div>
 					<p id="sh-summary" class="muted" role="status"></p>

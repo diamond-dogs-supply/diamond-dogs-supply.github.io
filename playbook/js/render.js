@@ -152,7 +152,7 @@ function drawRoute(play, route, opts, th, selected, ptsOverride) {
   } else if (route.end === 'dot') {
     out += `<circle cx="${f(tip.x)}" cy="${f(tip.y)}" r="${f(0.45 * K)}" fill="${color}"/>`;
   }
-  if (route.order > 0) {
+  if (route.order > 0 && opts.order !== false) {
     const bx = tip.x + dir.x * 1.9 * K;
     const by = tip.y + dir.y * 1.9 * K;
     out += `<circle cx="${f(bx)}" cy="${f(by)}" r="${f(0.8 * K)}" fill="${th.badgeFill}" stroke="${color}" stroke-width="${f(0.14 * K)}"/>`;

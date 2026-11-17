@@ -521,3 +521,15 @@ test('saved sheets validate, and units convert both ways', () => {
   assert.equal(toUnit(2.54, 'cm'), 6.45);
   assert.ok(Math.abs(fromUnit(10, 'cm') - 3.937) < 0.001);
 });
+
+test('route numbers can be hidden in the render and in print sheets', () => {
+  const play = newPlay();
+  const q = byLabel(play, 'O', 'X');
+  const ed = new Editor(play);
+  ed.setPreset(q.id, 'route', 'go');
+  ed.updateRoute(ed.play.routes.find((r) => r.playerId === q.id).id, { order: 1 });
+  assert.match(playToSVG(ed.play, { theme: 'print' }), />1<\/text>/);
+  assert.doesNotMatch(playToSVG(ed.play, { theme: 'print', order: false }), /font-weight="700" fill="#111111">1<\/text>/);
+  assert.equal(normLayout({ order: false }).order, false);
+  assert.equal(normLayout({}).order, true);
+});

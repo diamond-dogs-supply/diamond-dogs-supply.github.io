@@ -60,7 +60,7 @@ export function initSheets({ getPlays, toast, printRoot }) {
     set('ch', toUnit(L.cellH, u), 0.1);
     set('cols', L.cols, 1);
     set('rows', L.rows, 1);
-    for (const k of ['title', 'numbers', 'border', 'crop']) $('sh-' + k).checked = L[k];
+    for (const k of ['title', 'numbers', 'border', 'crop', 'order']) $('sh-' + k).checked = L[k];
     $('sh-show').value = L.show;
     for (const b of dlg.querySelectorAll('[data-mode]')) b.classList.toggle('on', b.dataset.mode === L.mode);
     $('sh-grid-row').hidden = L.mode !== 'grid';
@@ -246,7 +246,7 @@ export function initSheets({ getPlays, toast, printRoot }) {
     $('sh-' + id).addEventListener('change', (e) => patchLayout({ [key]: Number(e.target.value) }));
   }
   for (const b of dlg.querySelectorAll('[data-mode]')) b.addEventListener('click', () => patchLayout({ mode: b.dataset.mode }));
-  for (const k of ['title', 'numbers', 'border', 'crop']) $('sh-' + k).addEventListener('change', (e) => patchLayout({ [k]: e.target.checked }));
+  for (const k of ['title', 'numbers', 'border', 'crop', 'order']) $('sh-' + k).addEventListener('change', (e) => patchLayout({ [k]: e.target.checked }));
   $('sh-show').addEventListener('change', (e) => patchLayout({ show: e.target.value }));
 
   $('sh-print').addEventListener('click', () => {

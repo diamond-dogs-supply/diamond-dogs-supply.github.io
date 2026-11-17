@@ -292,14 +292,14 @@ export const ENTRIES = [
     short: 'Quick high-low on the right. Hitch and corner, with the backside clearing and a safe throw underneath.',
     points: [
       'Formation 2x2. Right side: H corner (1), Z hitch (2).',
-      'Backside: Y hitch (3) is the quick throw, X goes deep to clear. F swings out of the backfield (4).',
+      'Backside: Y hitch (3) is the quick throw, X runs a comeback at 12 to hold the corner. F swings out of the backfield (4).',
       'Q reads the flat defender: sinks, throw the corner; squats on the corner, hit the hitch.',
     ],
     beats: ['Cover 2', 'Zone'],
     off: '2x2',
     routes: [
       ['H', 'corner', { depth: 10, length: 8, order: 1 }], ['Z', 'hitch', { depth: 6, order: 2 }], ['Y', 'hitch', { depth: 5, order: 3 }],
-      ['X', 'go', { depth: 20 }], ['F', 'swing', { order: 4, hot: true }],
+      ['X', 'comeback', { depth: 12, length: 3 }], ['F', 'swing', { order: 4, hot: true }],
     ],
   },
   {
@@ -367,14 +367,14 @@ export const ENTRIES = [
     short: 'Three levels on the right: swing, snag, corner. Backside slant as the man-beater.',
     points: [
       'Formation 2x2. Read F swing (1), H snag at 5 (2), Z corner (3).',
-      'Backside Y slants (4); X goes deep.',
+      'Backside Y slants (4); X runs a post to hold the safety.',
       'H settles in the open space and turns to the QB.',
     ],
     beats: ['Cover 3', 'Zone', 'Man'],
     off: '2x2',
     routes: [
       ['F', 'swing', { order: 1 }], ['H', 'hitch', { depth: 5, order: 2 }], ['Z', 'corner', { depth: 8, length: 8, order: 3 }],
-      ['Y', 'slant', { depth: 2, length: 5, order: 4 }], ['X', 'go', { depth: 20 }],
+      ['Y', 'slant', { depth: 2, length: 5, order: 4 }], ['X', 'post', { depth: 10, length: 8 }],
     ],
   },
   {
@@ -426,7 +426,7 @@ export const ENTRIES = [
     id: 'p-10', num: 10, kind: 'play', cat: 'Offense', name: 'Post-wheel',
     short: 'Bunch left. The outside man wheels, the front man runs a post and the back man a trail slant.',
     points: [
-      'Formation bunch left. H wheel (1), Y post (2), Z slant (3). X goes deep on the other side.',
+      'Formation bunch left. H wheel (1), Y post (2), Z slant (3). X runs a sluggo (slant and go) on the other side as the shot.',
       'F is the check-down on the swing.',
       'Run it, then show the same look and call something different.',
     ],
@@ -434,14 +434,14 @@ export const ENTRIES = [
     off: 'bunch-l',
     routes: [
       ['H', 'wheel', { depth: 18, length: 7, order: 1 }], ['Y', 'post', { depth: 10, length: 8, order: 2 }], ['Z', 'slant', { depth: 2, length: 5, order: 3 }],
-      ['X', 'go', { depth: 20 }], ['F', 'swing', { order: 4, hot: true }],
+      ['X', 'sluggo', { depth: 2, length: 14 }], ['F', 'swing', { order: 4, hot: true }],
     ],
   },
   {
     id: 'p-11', num: 11, kind: 'play', cat: 'Offense', name: 'Bubble',
     short: 'A quick bubble screen to the slot with a go to clear the corner and a slant backside.',
     points: [
-      'Formation 2x2. H bubble (1), Z go (2), Y slant (3), X go.',
+      'Formation 2x2. H bubble (1), Z go (2), Y slant (3), X curl at 8 to keep the backside corner honest.',
       'F stays home as the safety valve.',
       'A one-step throw. Good against a defense sitting back, and against blitzes.',
     ],
@@ -449,7 +449,7 @@ export const ENTRIES = [
     off: '2x2',
     routes: [
       ['H', 'pts', { pts: [[2, -1.5], [6, -1]], order: 1 }], ['Z', 'go', { depth: 20, order: 2 }],
-      ['Y', 'slant', { depth: 2, length: 5, order: 3 }], ['X', 'go', { depth: 20 }],
+      ['Y', 'slant', { depth: 2, length: 5, order: 3 }], ['X', 'curl', { depth: 8 }],
     ],
   },
   {

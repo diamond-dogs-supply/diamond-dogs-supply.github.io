@@ -12,7 +12,7 @@ import { Editor } from '../js/state.js';
 import { encodePlay, decodePlay, codeFromHash, pack } from '../js/share.js';
 import { playToSVG, svgInner, viewFor } from '../js/render.js';
 import { formationPlayers } from '../js/formations.js';
-import { fitToCell, squeezeX, layoutSheet, normLayout, pageCount, pageStyle, sheetHTML, validateSheet, newSheet, toUnit, fromUnit } from '../js/sheet.js';
+import { layoutSheet, normLayout, pageCount, pageStyle, sheetHTML, validateSheet, newSheet, toUnit, fromUnit } from '../js/sheet.js';
 
 const byLabel = (play, side, label) => play.players.find((p) => p.side === side && p.label === label);
 
@@ -544,18 +544,18 @@ test('plays per page can be capped to any number, odd or even', () => {
   assert.equal((sheetHTML(plays, { ...base, maxPer: 3 }).match(/class="sheet-page"/g) || []).length, 3);
 });
 
-test('fitToCell fits a wide cell: sideways squeeze, then depth, and nothing leaves the field', () => {
+test('trimming the field above a short play keeps yard lines honest', () => {
   const play = newPlay();
-  const L = normLayout({ crop: true, fit: true, title: false, numbers: false });
-  const fitted = fitToCell(play, L, 1.97);
-  const v1 = viewFor(fitted, { title: false });
-  const v0 = viewFor(play, { title: false });
-  assert.ok(v1.w / v1.h > v0.w / v0.h || v1.w < v0.w, 'view gets wider relative to its height');
-  assert.equal(fitToCell(play, normLayout({ fit: false }), 1.97), play);
-  assert.equal(play._ky, undefined, 'the stored play is never modified');
-  const sq = squeezeX(play, 0.8);
-  for (const p of sq.players) assert.ok(p.x >= 0 && p.x <= sq.field.width);
-  assert.notEqual(playToSVG(play, { theme: 'print' }), playToSVG({ ...play, _ky: 0.5, _kn: 0.8 }, { theme: 'print' }));
+  const ed = new Editor(play);
+  const h = byLabel(ed.play, 'O', 'H');
+  ed.setPreset(h.id, 'route', 'hitch'); // a 6 yard route
+  const full = playToSVG(ed.play, { theme: 'print', crop: true });
+  const trimmed = playToSVG(ed.play, { theme: 'print', crop: true, trim: true });
+  assert.notEqual(full, trimmed);
+  assert.match(full, />25<\/text>/);
+  assert.doesNotMatch(trimmed, />25<\/text>/, 'no 25 yard line on a short play');
+  assert.match(trimmed, />5<\/text>/, 'but the 5 yard line is there');
+  assert.equal(playToSVG(ed.play, { theme: 'print', trim: true }), playToSVG(ed.play, { theme: 'print' }), 'trim only applies to the zoomed view');
 });
 
 test('cut-out cards: wristband cards on letter landscape', () => {

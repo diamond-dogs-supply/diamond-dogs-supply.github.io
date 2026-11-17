@@ -29,25 +29,11 @@ export const esc = (s) =>
 const f = (v) => String(Math.round(v * 100) / 100);
 const safeColor = (c, fb) => (typeof c === 'string' && /^#[0-9a-fA-F]{6}$/.test(c) ? c : fb);
 
-export const KNEE = 8; // yards: short routes live inside this, so they keep the most room
-
 export function geom(play) {
   const { width: W, length: L, backfield: B } = play.field;
-  // Print cells can squeeze the downfield scale. Yard lines, players, routes
-  // and zones all share one piecewise scale, so a 10 yard route still ends on
-  // the 10 yard line. The first KNEE yards use the near scale (play._kn, default
-  // 1) and everything deeper uses the far scale (play._ky), so short routes stay
-  // readable while deep routes are squeezed. The backfield is squeezed less so
-  // the QB and backs don't pile up on the line.
-  const ky = play._ky > 0 && play._ky < 1 ? play._ky : 1;
-  const kn = play._kn > 0 && play._kn < 1 ? Math.max(play._kn, ky) : 1;
-  const kb = Math.max(kn, 0.75);
-  const sy = (y) => L - B - (y < 0 ? y * kb : y <= KNEE ? y * kn : KNEE * kn + (y - KNEE) * ky);
   return {
-    W, L, B, ky, kn,
-    sy,
-    // half the height of an ellipse of yard-radius ry centred at yard y
-    ryOf: (y, ry) => Math.abs(sy(y - ry) - sy(y + ry)) / 2,
+    W, L, B,
+    sy: (y) => L - B - y,
     vb: `${-MARGIN} ${-MARGIN} ${W + MARGIN * 2} ${L + MARGIN * 2}`,
     vbW: W + MARGIN * 2,
     vbH: L + MARGIN * 2,
@@ -79,7 +65,7 @@ export function viewFor(play, opts = {}) {
     const pad = r.hot ? 4.8 : 2.2; // room for the HOT tag
     for (const pt of routeScreenPoints(play, r)) add(pt.x - pad * K, pt.y - pad * K, pt.x + pad * K, pt.y + pad * K);
     const c = r.kind === 'zone' && r.zone ? zoneCenter(play, r) : null;
-    if (c) add(c.x - r.zone.rx - 0.4, g.sy(c.y) - g.ryOf(c.y, r.zone.ry) - 0.4, c.x + r.zone.rx + 0.4, g.sy(c.y) + g.ryOf(c.y, r.zone.ry) + 0.4);
+    if (c) add(c.x - r.zone.rx - 0.4, g.sy(c.y) - r.zone.ry - 0.4, c.x + r.zone.rx + 0.4, g.sy(c.y) + r.zone.ry + 0.4);
   }
   if (!xs.length) return fullView(g);
   ys.push(g.sy(0) - 1.2, g.sy(0) + 1.8 * K); // keep the line of scrimmage in frame (y only)
@@ -201,7 +187,7 @@ function zoneParts(play, route, g, K = 1) {
   const py = g.sy(player.y);
   const dx = px - cx;
   const dy = py - cy;
-  const k = Math.hypot(dx / route.zone.rx, dy / g.ryOf(c.y, route.zone.ry));
+  const k = Math.hypot(dx / route.zone.rx, dy / route.zone.ry);
   let line = null;
   if (k > 1.02) {
     const edge = { x: cx + dx / k, y: cy + dy / k };
@@ -217,8 +203,7 @@ function drawZone(play, route, g, opts, th, selected) {
   const zp = zoneParts(play, route, g, opts.glyph || 1);
   if (!zp) return { under: '', over: '' };
   const rx = route.zone.rx;
-  const cz = zoneCenter(play, route);
-  const ry = g.ryOf(cz.y, route.zone.ry);
+  const ry = route.zone.ry;
   const color = safeColor(route.color, th.routeD);
   const K = opts.glyph || 1;
   const sw = (selected ? 0.34 : 0.24) * K;
@@ -259,12 +244,14 @@ function drawPlayer(p, g, th, opts) {
   return out + '</g>';
 }
 
-function drawField(g, th, view) {
+function drawField(g, th, view, topYard) {
   const { W, L, B, sy } = g;
+  const yMaxLine = Math.min(L - B, topYard === undefined ? Infinity : topYard);
+  const fieldTop = sy(yMaxLine);
   let out = `<rect x="${f(view.x)}" y="${f(view.y)}" width="${f(view.w)}" height="${f(view.h)}" fill="${th.page}"/>`;
-  out += `<rect x="0" y="0" width="${W}" height="${L}" fill="${th.field}" stroke="${th.border}" stroke-width="0.3"/>`;
+  out += `<rect x="0" y="${f(fieldTop)}" width="${W}" height="${f(L - fieldTop)}" fill="${th.field}" stroke="${th.border}" stroke-width="0.3"/>`;
   const yMin = -B;
-  const yMax = L - B;
+  const yMax = yMaxLine;
   for (let y = Math.ceil(yMin); y <= yMax; y++) {
     if (y === 0) continue;
     const yy = f(sy(y));
@@ -301,7 +288,7 @@ export function svgInner(play, opts = {}) {
   const show = opts.show || 'all';
   const g = geom(play);
   const view = opts.view || (opts.crop ? viewFor(play, opts) : fullView(g));
-  let out = drawField(g, th, view);
+  let out = drawField(g, th, view, opts.topYard);
 
   if (opts.title !== false) {
     out += chip(Math.max(view.x + 0.8, 0.8), Math.max(view.y + 0.8, 0.8), opts.titleText != null ? String(opts.titleText) : play.name || 'Untitled play', 1.5 * (opts.glyph || 1), th, false, Math.max(8, view.w - 15 * (opts.glyph || 1)));
@@ -355,12 +342,34 @@ export function svgOpenAttrs(play, size, view) {
   return `xmlns="http://www.w3.org/2000/svg" viewBox="${vb}"${dims}`;
 }
 
+// How far downfield (in yards from the line) anything drawn reaches, plus a few
+// yards of field beyond it. Used to trim the empty field above a short play.
+export function contentTopYard(play, show = 'all') {
+  const g = geom(play);
+  const visible = new Set(play.players.filter((p) => isVisible(show, p.side)).map((p) => p.id));
+  let top = 0;
+  for (const p of play.players) if (visible.has(p.id)) top = Math.max(top, p.y);
+  for (const r of play.routes) {
+    if (!visible.has(r.playerId)) continue;
+    if (r.kind === 'zone') {
+      const c = zoneCenter(play, r);
+      if (c && r.zone) top = Math.max(top, c.y + r.zone.ry);
+    } else {
+      for (const pt of routeScreenPoints(play, r)) top = Math.max(top, g.L - g.B - pt.y);
+    }
+  }
+  return Math.min(g.L - g.B, Math.max(8, Math.ceil(top) + 3));
+}
+
 // Standalone <svg> string for export and print.
 export function playToSVG(play, opts = {}) {
   const g = geom(play);
   // Printed cells are small, so players, letters and lines are enlarged to stay
   // readable: about 11 yards per inch is the natural size, more than that scales up.
   const pick = (o) => (opts.crop ? viewFor(play, o) : fullView(g));
+  // "trim": draw the field only a few yards past the deepest route, instead of all the way to the end zone
+  let topYard;
+  if (opts.crop && opts.trim) topYard = contentTopYard(play, opts.show || 'all');
   let view = pick(opts);
   let glyph = opts.glyph || 1;
   if (!opts.glyph && opts.cellWIn > 0) {
@@ -370,5 +379,5 @@ export function playToSVG(play, opts = {}) {
   let size = null;
   if (opts.widthPx) size = { width: opts.widthPx, height: Math.round((opts.widthPx * view.h) / view.w) };
   const label = `Play diagram: ${play.name || 'Untitled play'}`;
-  return `<svg ${svgOpenAttrs(play, size, view)} role="img" aria-label="${esc(label)}">${svgInner(play, { ...opts, view, glyph, editor: false })}</svg>`;
+  return `<svg ${svgOpenAttrs(play, size, view)} role="img" aria-label="${esc(label)}">${svgInner(play, { ...opts, view, glyph, topYard, editor: false })}</svg>`;
 }

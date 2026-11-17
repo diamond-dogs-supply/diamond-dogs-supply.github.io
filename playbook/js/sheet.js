@@ -4,7 +4,7 @@
 // Pure functions: no DOM, so the layout can be tested in Node.
 
 import { clamp, num, uid } from './model.js';
-import { esc, playToSVG, viewFor } from './render.js';
+import { esc, playToSVG } from './render.js';
 
 export const SHEET_SCHEMA = 1;
 export const MAX_SHEET_PLAYS = 200;
@@ -43,13 +43,10 @@ export const SHEET_DEFAULT = Object.freeze({
   order: true,
   primary: false, // highlight read number 1
   hot: true, // show HOT tags
-  fit: true, // squeeze each diagram's depth or width so it fills a wide or tall cell
+  fit: true, // trim the empty field past the deepest route (needs crop)
   show: 'all',
 });
 
-const X_MIN = 0.8; // sideways squeeze
-const FAR_MIN = 0.3; // deepest part of the field can be squeezed this far
-const NEAR_MIN = 0.65; // the first few yards no further than this
 const CARD_PAD = 0.06; // inside each card, around the plays
 const CARD_GAP = 0.05; // between plays on a card
 const round = (v, d = 3) => Math.round(v * 10 ** d) / 10 ** d;
@@ -151,54 +148,7 @@ export function pageStyle(layoutIn) {
 // still ends on the 10 yard line, the lines are just closer together. Tall
 // cells are left alone: the diagram simply gets more room downfield. Never
 // squeezes the deep part below 30% or the near part below 65%.
-// Pulls players and routes toward the middle of the field (sideways only), so a
-// wide play gets a bigger scale in a small cell. Inward only, so nothing can end
-// up off the field.
-export function squeezeX(play, kx) {
-  const q = JSON.parse(JSON.stringify(play));
-  const cx = q.field.width / 2;
-  for (const p of q.players) p.x = cx + (p.x - cx) * kx;
-  for (const r of q.routes) {
-    for (const pt of r.points) pt.x *= kx;
-    if (r.zone) r.zone.rx *= kx;
-  }
-  return q;
-}
-
-export function fitToCell(playIn, L, aspect) {
-  if (!L.fit || !L.crop) return playIn;
-  const vopts = { show: L.show, title: L.title || L.numbers };
-  const shapeOf = (p, kn, ky) => {
-    const v = viewFor({ ...p, _kn: kn, _ky: ky }, vopts);
-    return v.w / v.h;
-  };
-  if (shapeOf(playIn, 1, 1) >= aspect * 0.97) return playIn; // already wide enough
-  // 1) bring the sides in a little (up to 20%): a bigger scale for everything
-  const play = squeezeX(playIn, X_MIN);
-  const shape = (kn, ky) => shapeOf(play, kn, ky);
-  // 2) squeeze only the deep part (past the knee), so short routes keep their room
-  let ky = 1;
-  for (let i = 0; i < 10; i++) {
-    const a = shape(1, ky);
-    if (Math.abs(a / aspect - 1) < 0.03) break;
-    ky = Math.max(FAR_MIN, Math.min(1, ky * Math.pow(a / aspect, 0.9)));
-    if (ky <= FAR_MIN) break;
-  }
-  // 3) if that is not enough, squeeze the near part a little too
-  let kn = 1;
-  if (shape(1, ky) < aspect * 0.97) {
-    for (let i = 0; i < 10; i++) {
-      const a = shape(kn, ky);
-      if (Math.abs(a / aspect - 1) < 0.03) break;
-      kn = Math.max(NEAR_MIN, Math.min(1, kn * Math.pow(a / aspect, 0.9)));
-      if (kn <= NEAR_MIN) break;
-    }
-  }
-  return { ...play, _ky: ky, _kn: kn };
-}
-
-function cellSVG(playIn, n, L, aspect, cellW) {
-  const play = fitToCell(playIn, L, aspect);
+function cellSVG(play, n, L, aspect, cellW) {
   let titleText;
   if (L.title && L.numbers) titleText = `${n}. ${play.name || 'Untitled play'}`;
   else if (L.numbers) titleText = String(n);
@@ -209,6 +159,7 @@ function cellSVG(playIn, n, L, aspect, cellW) {
     primary: L.primary,
     hot: L.hot,
     crop: L.crop,
+    trim: L.fit,
     aspect,
     title: L.title || L.numbers,
     titleText,

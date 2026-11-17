@@ -118,9 +118,12 @@ export function pageStyle(layoutIn) {
 export function squeezePlay(play, kx, ky) {
   const q = JSON.parse(JSON.stringify(play));
   const cx = q.field.width / 2;
+  // players barely compress downfield (keeps the backfield from piling up);
+  // route lengths take the squeeze
+  const kp = Math.max(ky, 0.75);
   for (const p of q.players) {
     p.x = cx + (p.x - cx) * kx;
-    p.y *= 1 - (1 - ky) * 0.5; // players move half as much, so the backfield doesn't pile up
+    p.y *= kp;
   }
   for (const r of q.routes) {
     for (const pt of r.points) {
@@ -135,8 +138,10 @@ export function squeezePlay(play, kx, ky) {
   return q;
 }
 
-// Finds the squeeze that makes the cropped view's shape match the cell's, so
-// the diagram fills the cell instead of leaving empty bands. Never below 0.35.
+// Finds the stretch/squeeze that makes the cropped view's shape match the
+// cell's, so the diagram fills the cell instead of leaving empty bands. In a
+// wide cell the players spread out sideways a little (up to 25%, staying on the
+// field) before the depth is squeezed; in a tall cell the width is squeezed.
 export function fitToCell(play, L, aspect) {
   if (!L.fit || !L.crop) return play;
   const vopts = { show: L.show, title: L.title || L.numbers };
@@ -144,17 +149,24 @@ export function fitToCell(play, L, aspect) {
     const v = viewFor(p, vopts);
     return v.w / v.h;
   };
+  const a0 = shape(play);
+  if (Math.abs(a0 / aspect - 1) < 0.03) return play;
+  const wide = aspect > a0;
+  let kx = 1;
+  if (wide) {
+    const cx = play.field.width / 2;
+    const reach = Math.max(1, ...play.players.map((p) => Math.abs(p.x - cx)));
+    kx = Math.max(1, Math.min(1.25, (play.field.width / 2 - 1.5) / reach));
+  }
   let k = 1;
-  let best = play;
-  for (let i = 0; i < 6; i++) {
+  let best = wide ? squeezePlay(play, kx, 1) : play;
+  for (let i = 0; i < 8; i++) {
     const a = shape(best);
     if (Math.abs(a / aspect - 1) < 0.03) break;
-    // too wide for the cell -> squeeze sideways; too tall -> squeeze depth
     const step = Math.pow(a / aspect, 0.8);
-    const wide = aspect > a; // the cell is wider than the content: shrink depth
-    k = Math.max(0.35, Math.min(1, k * (wide ? step : 1 / step)));
-    best = wide ? squeezePlay(play, 1, k) : squeezePlay(play, k, 1);
-    if (k <= 0.35) break;
+    k = Math.max(0.45, Math.min(1, k * (wide ? step : 1 / step)));
+    best = wide ? squeezePlay(play, kx, k) : squeezePlay(play, k, 1);
+    if (k <= 0.45) break;
   }
   return best;
 }

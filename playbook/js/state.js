@@ -31,7 +31,7 @@ export function closestOnSegment(a, b, p) {
 export class Editor {
   constructor(play) {
     this.play = play;
-    this.ui = { sel: { playerId: null, kind: 'route', point: null }, show: 'all', snap: true, draw: false, order: true };
+    this.ui = { sel: { playerId: null, kind: 'route', point: null }, show: 'all', snap: true, draw: false, order: true, primary: false, hot: true };
     this.undoStack = [];
     this.redoStack = [];
     this.listeners = new Set();
@@ -215,6 +215,16 @@ export class Editor {
     this.emit('full');
   }
 
+  setPrimary(on) {
+    this.ui.primary = !!on;
+    this.emit('full');
+  }
+
+  setHot(on) {
+    this.ui.hot = !!on;
+    this.emit('full');
+  }
+
   setOrder(on) {
     this.ui.order = !!on;
     this.emit('full');
@@ -380,7 +390,7 @@ export class Editor {
     if ('label' in patch) out.label = String(patch.label).slice(0, 10);
     if ('depth' in patch) out.depth = clamp(Number(patch.depth) || 0, 0, 60);
     if ('length' in patch) out.length = clamp(Number(patch.length) || 0, 0, 60);
-    for (const k of ['flip', 'curve', 'dash']) if (k in patch) out[k] = !!patch[k];
+    for (const k of ['flip', 'curve', 'dash', 'hot']) if (k in patch) out[k] = !!patch[k];
     if ('end' in patch && END_STYLES.includes(patch.end)) out.end = patch.end;
     if ('color' in patch) out.color = ROUTE_COLORS.includes(patch.color) ? patch.color : null;
     if ('order' in patch) out.order = Math.round(clamp(Number(patch.order) || 0, 0, 9));

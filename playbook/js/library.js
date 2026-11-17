@@ -22,7 +22,7 @@ export const entryById = (id) => ENTRIES.find((e) => e.id === id) || null;
 // Every coverage / route family an entry can be tagged as beating.
 export const BEATS = ['Man', 'Cover 1', 'Cover 2', 'Cover 3', 'Cover 4', 'Zone', 'Blitz'];
 
-const PATCH_KEYS = ['depth', 'length', 'flip', 'curve', 'dash', 'end', 'color', 'order'];
+const PATCH_KEYS = ['depth', 'length', 'flip', 'curve', 'dash', 'end', 'color', 'order', 'hot'];
 
 function addRoute(ed, player, preset, o = {}) {
   const kind = o.kind || 'route';

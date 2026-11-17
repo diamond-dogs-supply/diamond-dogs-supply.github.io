@@ -108,7 +108,7 @@ function allPlays() {
 function renderField() {
 	const g = geom(ed.play);
 	svg.setAttribute('viewBox', g.vb);
-	svg.innerHTML = svgInner(ed.play, { theme: 'screen', show: ed.ui.show, order: ed.ui.order, editor: !readOnly, sel: ed.ui.sel, draw: ed.ui.draw });
+	svg.innerHTML = svgInner(ed.play, { theme: 'screen', show: ed.ui.show, order: ed.ui.order, primary: ed.ui.primary, hot: ed.ui.hot, editor: !readOnly, sel: ed.ui.sel, draw: ed.ui.draw });
 }
 
 function toField(e) {
@@ -351,6 +351,7 @@ function inspectorHTML() {
 		<label><input type="checkbox" id="r-curve" ${route.curve ? 'checked' : ''}> Rounded</label>
 		<label><input type="checkbox" id="r-dash" ${route.dash ? 'checked' : ''}> Dashed</label>
 		<label>End <select id="r-end">${['arrow', 'T', 'dot', 'none'].map((v) => `<option value="${v}" ${route.end === v ? 'selected' : ''}>${{ arrow: 'Arrow', T: 'T (block)', dot: 'Dot', none: 'None' }[v]}</option>`).join('')}</select></label>
+		<label title="The quick throw against a blitz"><input type="checkbox" id="r-hot" ${route.hot ? 'checked' : ''}> Hot route</label>
 		<label>Read <select id="r-order"><option value="0">None</option>${[1, 2, 3, 4, 5].map((n) => `<option value="${n}" ${route.order === n ? 'selected' : ''}>${n}</option>`).join('')}</select></label>
 	</div>`;
 	h += `<div class="swatches" aria-label="Route color">${ROUTE_COLORS.map((c) => `<button type="button" class="swatch${c ? '' : ' auto'}${route.color === c ? ' on' : ''}" data-act="color" data-color="${c || ''}" title="${c || 'Automatic'}" ${c ? `style="background:${c}"` : ''}></button>`).join('')}</div>`;
@@ -393,6 +394,7 @@ inspector.addEventListener('change', (e) => {
 	if (id === 'r-flip') ed.updateRoute(route.id, { flip: e.target.checked });
 	else if (id === 'r-curve') ed.updateRoute(route.id, { curve: e.target.checked });
 	else if (id === 'r-dash') ed.updateRoute(route.id, { dash: e.target.checked });
+	else if (id === 'r-hot') ed.updateRoute(route.id, { hot: e.target.checked });
 	else if (id === 'r-end') ed.updateRoute(route.id, { end: e.target.value });
 	else if (id === 'r-order') ed.updateRoute(route.id, { order: Number(e.target.value) });
 });
@@ -466,6 +468,8 @@ for (const key of ['width', 'length', 'backfield']) {
 bindLive($('play-name'), (v) => ed.setMeta('name', v));
 bindLive($('play-notes'), (v) => ed.setMeta('notes', v));
 bindLive($('play-tags'), (v) => ed.setMeta('tags', v));
+$('show-primary').addEventListener('change', (e) => ed.setPrimary(e.target.checked));
+$('show-hot').addEventListener('change', (e) => ed.setHot(e.target.checked));
 $('show-order').addEventListener('change', (e) => ed.setOrder(e.target.checked));
 $('snap').addEventListener('change', (e) => ed.setSnap(e.target.checked));
 for (const b of document.querySelectorAll('[data-show]')) b.addEventListener('click', () => ed.setShow(b.dataset.show));
@@ -530,6 +534,8 @@ function renderPanels() {
 	for (const b of document.querySelectorAll('[data-show]')) b.classList.toggle('on', b.dataset.show === ed.ui.show);
 	$('snap').checked = ed.ui.snap;
 	$('show-order').checked = ed.ui.order;
+	$('show-primary').checked = ed.ui.primary;
+	$('show-hot').checked = ed.ui.hot;
 	const off = ed.play.players.filter((p) => p.side === 'O').length;
 	const def = ed.play.players.length - off;
 	$('counts').textContent = `Offense ${off} · Defense ${def} · Field ${ed.play.field.width} × ${ed.play.field.length} yd`;
@@ -593,7 +599,7 @@ $('btn-png').addEventListener('click', async () => {
 		const g = geom(ed.play);
 		const w = 1600;
 		const h = Math.round((w * g.vbH) / g.vbW);
-		const markup = playToSVG(ed.play, { theme: 'print', show: ed.ui.show, order: ed.ui.order, widthPx: w });
+		const markup = playToSVG(ed.play, { theme: 'print', show: ed.ui.show, order: ed.ui.order, primary: ed.ui.primary, hot: ed.ui.hot, widthPx: w });
 		downloadBlob(await svgToPngBlob(markup, w, h), `${slug(ed.play.name)}.png`);
 	} catch (err) {
 		toast(err.message || 'PNG export failed');

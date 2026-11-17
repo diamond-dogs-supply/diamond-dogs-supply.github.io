@@ -62,7 +62,8 @@ export function viewFor(play, opts = {}) {
   }
   for (const r of play.routes) {
     if (!visible.has(r.playerId)) continue;
-    for (const pt of routeScreenPoints(play, r)) add(pt.x - 2.2 * K, pt.y - 2.2 * K, pt.x + 2.2 * K, pt.y + 2.2 * K);
+    const pad = r.hot ? 4.8 : 2.2; // room for the HOT tag
+    for (const pt of routeScreenPoints(play, r)) add(pt.x - pad * K, pt.y - pad * K, pt.x + pad * K, pt.y + pad * K);
     const c = r.kind === 'zone' && r.zone ? zoneCenter(play, r) : null;
     if (c) add(c.x - r.zone.rx - 0.4, g.sy(c.y) - r.zone.ry - 0.4, c.x + r.zone.rx + 0.4, g.sy(c.y) + r.zone.ry + 0.4);
   }
@@ -121,13 +122,17 @@ function dirOf(pts) {
   return { x: dx / len, y: dy / len, len: Math.hypot(dx, dy) };
 }
 
+const HOT_COLOR = '#d62828';
+
 function drawRoute(play, route, opts, th, selected, ptsOverride) {
   const player = findPlayer(play, route.playerId);
   const pts = ptsOverride || routeScreenPoints(play, route);
   if (pts.length < 2) return '';
-  const color = safeColor(route.color, player && player.side === 'D' ? th.routeD : th.routeO);
+  const isHot = !!route.hot && opts.hot !== false;
+  const isPrimary = !!opts.primary && route.order === 1;
+  const color = safeColor(route.color, isHot ? HOT_COLOR : player && player.side === 'D' ? th.routeD : th.routeO);
   const K = opts.glyph || 1;
-  const width = (selected ? 0.38 : 0.28) * K;
+  const width = (selected ? 0.38 : 0.28) * K * (isPrimary ? 1.7 : 1);
   const dir = dirOf(pts);
   const tip = pts[pts.length - 1];
   const line = pts.slice();
@@ -155,8 +160,17 @@ function drawRoute(play, route, opts, th, selected, ptsOverride) {
   if (route.order > 0 && opts.order !== false) {
     const bx = tip.x + dir.x * 1.9 * K;
     const by = tip.y + dir.y * 1.9 * K;
-    out += `<circle cx="${f(bx)}" cy="${f(by)}" r="${f(0.8 * K)}" fill="${th.badgeFill}" stroke="${color}" stroke-width="${f(0.14 * K)}"/>`;
-    out += `<text x="${f(bx)}" y="${f(by + 0.33 * K)}" text-anchor="middle" font-family="${FONT}" font-size="${f(0.95 * K)}" font-weight="700" fill="${th.badgeText}">${route.order}</text>`;
+    const rad = (isPrimary ? 1.05 : 0.8) * K;
+    out += `<circle cx="${f(bx)}" cy="${f(by)}" r="${f(rad)}" fill="${isPrimary ? color : th.badgeFill}" stroke="${color}" stroke-width="${f(0.14 * K)}"/>`;
+    out += `<text x="${f(bx)}" y="${f(by + 0.36 * K)}" text-anchor="middle" font-family="${FONT}" font-size="${f((isPrimary ? 1.2 : 0.95) * K)}" font-weight="700" fill="${isPrimary ? '#ffffff' : th.badgeText}">${route.order}</text>`;
+  }
+  if (isHot) {
+    // a small HOT tag beside the end of the route (beyond the read badge when there is one)
+    const dist = route.order > 0 && opts.order !== false ? 4.4 : 2.1;
+    const hx = tip.x + dir.x * dist * K;
+    const hy = tip.y + dir.y * dist * K;
+    out += `<rect x="${f(hx - 1.35 * K)}" y="${f(hy - 0.62 * K)}" width="${f(2.7 * K)}" height="${f(1.24 * K)}" rx="${f(0.35 * K)}" fill="${HOT_COLOR}"/>`;
+    out += `<text x="${f(hx)}" y="${f(hy + 0.34 * K)}" text-anchor="middle" font-family="${FONT}" font-size="${f(0.88 * K)}" font-weight="700" fill="#ffffff">HOT</text>`;
   }
   if (opts.editor) {
     out += `<path d="${pathD(pts, route.curve)}" fill="none" stroke="transparent" stroke-width="1.8" style="pointer-events:stroke;cursor:pointer" data-rid="${esc(route.id)}"/>`;

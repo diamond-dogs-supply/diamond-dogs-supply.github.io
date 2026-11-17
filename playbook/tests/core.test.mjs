@@ -556,3 +556,23 @@ test('fitToCell squeezes a play to match a wide cell and keeps everything on the
   const sq = squeezePlay(play, 1, 0.5);
   assert.equal(sq.players.length, play.players.length);
 });
+
+test('hot routes and the primary read: model, share link, render and sheet settings', async () => {
+  const play = newPlay();
+  const ed = new Editor(play);
+  const x = byLabel(ed.play, 'O', 'X');
+  ed.setPreset(x.id, 'route', 'go');
+  const r = ed.play.routes.find((q) => q.playerId === x.id);
+  ed.updateRoute(r.id, { order: 1, hot: true });
+  assert.equal(ed.play.routes.find((q) => q.id === r.id).hot, true);
+  const back = await decodePlay(await encodePlay(ed.play));
+  assert.equal(back.routes.find((q) => q.order === 1).hot, true);
+  assert.match(playToSVG(ed.play, { theme: 'print' }), />HOT<\/text>/);
+  assert.doesNotMatch(playToSVG(ed.play, { theme: 'print', hot: false }), />HOT<\/text>/);
+  const plain = playToSVG(ed.play, { theme: 'print', hot: false });
+  const prim = playToSVG(ed.play, { theme: 'print', hot: false, primary: true });
+  assert.notEqual(plain, prim);
+  assert.equal(normLayout({}).primary, false);
+  assert.equal(normLayout({}).hot, true);
+  assert.equal(normLayout({ hot: false }).hot, false);
+});

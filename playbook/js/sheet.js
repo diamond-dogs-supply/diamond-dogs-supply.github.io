@@ -38,6 +38,8 @@ export const SHEET_DEFAULT = Object.freeze({
   border: true,
   crop: true,
   order: true,
+  primary: false, // highlight read number 1
+  hot: true, // show HOT tags
   fit: true, // squeeze each diagram's depth or width so it fills a wide or tall cell
   show: 'all',
 });
@@ -74,6 +76,8 @@ export function normLayout(raw = {}) {
     border: raw.border === undefined ? d.border : !!raw.border,
     crop: raw.crop === undefined ? d.crop : !!raw.crop,
     order: raw.order === undefined ? d.order : !!raw.order,
+    primary: raw.primary === undefined ? d.primary : !!raw.primary,
+    hot: raw.hot === undefined ? d.hot : !!raw.hot,
     fit: raw.fit === undefined ? d.fit : !!raw.fit,
     show: ['all', 'off', 'def'].includes(raw.show) ? raw.show : 'all',
   };
@@ -180,6 +184,8 @@ function cellSVG(playIn, n, L, aspect, cellW) {
     theme: 'print',
     show: L.show,
     order: L.order,
+    primary: L.primary,
+    hot: L.hot,
     crop: L.crop,
     aspect,
     title: L.title || L.numbers,

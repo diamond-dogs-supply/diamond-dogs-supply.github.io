@@ -76,7 +76,7 @@ export const ENTRIES = [
     ],
     beats: ['Cover 3', 'Zone', 'Man'],
     off: '2x2', show: ['H', 'Z', 'F'], flipLabels: true,
-    routes: [['H', 'hitch', { depth: 5, order: 1 }], ['F', 'swing', { order: 2 }], ['Z', 'go', { depth: 20, order: 3 }]],
+    routes: [['H', 'hitch', { depth: 5, order: 1 }], ['F', 'swing', { order: 2, hot: true }], ['Z', 'go', { depth: 20, order: 3 }]],
     def: [['F', 8, 5, 'z-hook', 'Hook', { c: [8, 7], rx: 4.5, ry: 3.4 }], ['G', 14, 5, 'z-flat', 'Flat']],
   },
   {
@@ -114,7 +114,7 @@ export const ENTRIES = [
     ],
     beats: ['Cover 4', 'Man', 'Zone'],
     off: '2x2', show: ['H', 'Z', 'F'], flipLabels: true,
-    routes: [['Z', 'dig', { depth: 12, length: 10, order: 1 }], ['H', 'drag', { depth: 2, length: 10, order: 2 }], ['F', 'swing', { order: 3 }]],
+    routes: [['Z', 'dig', { depth: 12, length: 10, order: 1 }], ['H', 'drag', { depth: 2, length: 10, order: 2 }], ['F', 'swing', { order: 3, hot: true }]],
     def: [['E', 0, 5, 'z-hook', 'Hook']],
   },
 
@@ -148,7 +148,7 @@ export const ENTRIES = [
     off: '2x2', show: ['X', 'Y', 'H', 'Z', 'F'],
     routes: [
       ['H', 'seam', { depth: 17, order: 1 }], ['Y', 'seam', { depth: 17, order: 2 }], ['Z', 'go', { depth: 22, order: 3 }], ['X', 'go', { depth: 22, order: 4 }],
-      ['F', 'swing', { order: 5 }],
+      ['F', 'swing', { order: 5, hot: true }],
     ],
   },
   {
@@ -161,7 +161,7 @@ export const ENTRIES = [
     ],
     beats: ['Cover 3', 'Zone'],
     off: '2x2', show: ['H', 'Z', 'F'], flipLabels: true,
-    routes: [['Z', 'corner', { depth: 8, length: 8, order: 1 }], ['H', 'out', { depth: 6, length: 6, order: 2 }], ['F', 'swing', { order: 3 }]],
+    routes: [['Z', 'corner', { depth: 8, length: 8, order: 1 }], ['H', 'out', { depth: 6, length: 6, order: 2 }], ['F', 'swing', { order: 3, hot: true }]],
     def: [['C', 11, 11, 'z-third', 'Deep 1/3'], ['G', 14, 5, 'z-flat', 'Flat']],
   },
   {
@@ -174,7 +174,7 @@ export const ENTRIES = [
     ],
     beats: ['Cover 2', 'Zone'],
     off: '2x2', show: ['H', 'Z', 'F'], flipLabels: true,
-    routes: [['H', 'corner', { depth: 8, length: 8, order: 1 }], ['Z', 'post', { depth: 12, length: 8, order: 2 }], ['F', 'swing', { order: 3 }]],
+    routes: [['H', 'corner', { depth: 8, length: 8, order: 1 }], ['Z', 'post', { depth: 12, length: 8, order: 2 }], ['F', 'swing', { order: 3, hot: true }]],
     def: [['B', 8, 12, 'z-half', 'Safety'], ['G', 14, 5, 'z-flat', 'Flat']],
   },
 
@@ -299,7 +299,7 @@ export const ENTRIES = [
     off: '2x2',
     routes: [
       ['H', 'corner', { depth: 10, length: 8, order: 1 }], ['Z', 'hitch', { depth: 6, order: 2 }], ['Y', 'hitch', { depth: 5, order: 3 }],
-      ['X', 'go', { depth: 20 }], ['F', 'swing', { order: 4 }],
+      ['X', 'go', { depth: 20 }], ['F', 'swing', { order: 4, hot: true }],
     ],
   },
   {
@@ -344,7 +344,7 @@ export const ENTRIES = [
     off: 'trips-r',
     routes: [
       ['Z', 'corner', { depth: 9, length: 8, order: 1 }], ['H', 'out', { depth: 6, length: 6, order: 2 }], ['Y', 'seam', { depth: 16 }],
-      ['X', 'slant', { depth: 2, length: 5, order: 3 }], ['F', 'swing', { order: 4 }],
+      ['X', 'slant', { depth: 2, length: 5, order: 3 }], ['F', 'swing', { order: 4, hot: true }],
     ],
   },
   {
@@ -358,7 +358,7 @@ export const ENTRIES = [
     beats: ['Cover 2', 'Zone'],
     off: '2x2',
     routes: [
-      ['H', 'corner', { depth: 8, length: 8, order: 1 }], ['Z', 'post', { depth: 12, length: 8, order: 2 }], ['F', 'swing', { order: 3 }],
+      ['H', 'corner', { depth: 8, length: 8, order: 1 }], ['Z', 'post', { depth: 12, length: 8, order: 2 }], ['F', 'swing', { order: 3, hot: true }],
       ['Y', 'drag', { depth: 2, length: 10 }], ['X', 'go', { depth: 20 }],
     ],
   },
@@ -388,7 +388,7 @@ export const ENTRIES = [
     beats: ['Cover 4', 'Man', 'Zone'],
     off: '2x2',
     routes: [
-      ['Z', 'dig', { depth: 12, length: 10, order: 1 }], ['H', 'drag', { depth: 2, length: 10, order: 2 }], ['F', 'swing', { order: 3 }],
+      ['Z', 'dig', { depth: 12, length: 10, order: 1 }], ['H', 'drag', { depth: 2, length: 10, order: 2 }], ['F', 'swing', { order: 3, hot: true }],
       ['X', 'post', { depth: 10, length: 8 }], ['Y', 'curl', { depth: 10, order: 4 }],
     ],
   },
@@ -403,7 +403,7 @@ export const ENTRIES = [
     beats: ['Cover 3', 'Zone', 'Man'],
     off: '2x2',
     routes: [
-      ['H', 'hitch', { depth: 5, order: 1 }], ['F', 'swing', { order: 2 }], ['Z', 'go', { depth: 20, order: 3 }],
+      ['H', 'hitch', { depth: 5, order: 1 }], ['F', 'swing', { order: 2, hot: true }], ['Z', 'go', { depth: 20, order: 3 }],
       ['X', 'curl', { depth: 10, order: 4 }], ['Y', 'hitch', { depth: 5 }],
     ],
   },
@@ -419,7 +419,7 @@ export const ENTRIES = [
     off: 'bunch-r',
     routes: [
       ['Z', 'corner', { depth: 11, length: 7, order: 1 }], ['Y', 'out', { depth: 6, length: 6, order: 2 }], ['H', 'flat', { depth: 1, length: 6, order: 3 }],
-      ['X', 'post', { depth: 10, length: 8, order: 4 }], ['F', 'swing', { order: 5 }],
+      ['X', 'post', { depth: 10, length: 8, order: 4 }], ['F', 'swing', { order: 5, hot: true }],
     ],
   },
   {
@@ -434,7 +434,7 @@ export const ENTRIES = [
     off: 'bunch-l',
     routes: [
       ['H', 'wheel', { depth: 18, length: 7, order: 1 }], ['Y', 'post', { depth: 10, length: 8, order: 2 }], ['Z', 'slant', { depth: 2, length: 5, order: 3 }],
-      ['X', 'go', { depth: 20 }], ['F', 'swing', { order: 4 }],
+      ['X', 'go', { depth: 20 }], ['F', 'swing', { order: 4, hot: true }],
     ],
   },
   {

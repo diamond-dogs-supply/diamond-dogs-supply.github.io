@@ -66,6 +66,7 @@ export function makeRoute(playerId, kind) {
     flip: false,
     curve: false,
     dash: kind === 'motion',
+    hot: false,
     end: kind === 'zone' ? 'none' : 'arrow',
     color: null,
     order: 0,
@@ -174,6 +175,7 @@ export function validatePlay(raw) {
     route.flip = !!rr.flip;
     route.curve = !!rr.curve;
     route.dash = rr.dash === undefined ? kind === 'motion' : !!rr.dash;
+    route.hot = kind !== 'zone' && !!rr.hot;
     route.end = END_STYLES.includes(rr.end) ? rr.end : route.end;
     route.color = isColor(rr.color) ? rr.color : null;
     route.order = Math.round(clamp(num(rr.order, 0), 0, 9));

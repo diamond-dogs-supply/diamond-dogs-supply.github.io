@@ -63,6 +63,7 @@ export function initSheets({ getPlays, toast, printRoot }) {
     set('maxper', L.maxPer || '', 1);
     for (const k of ['title', 'numbers', 'border', 'crop', 'order', 'fit']) $('sh-' + k).checked = L[k];
     $('sh-show').value = L.show;
+    $('sh-fit').disabled = !L.crop; // fitting works on the zoomed view, so it needs "Zoom to the action"
     for (const b of dlg.querySelectorAll('[data-mode]')) b.classList.toggle('on', b.dataset.mode === L.mode);
     $('sh-grid-row').hidden = L.mode !== 'grid';
     $('sh-fixed-row').hidden = L.mode !== 'fixed';

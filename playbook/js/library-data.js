@@ -394,17 +394,17 @@ export const ENTRIES = [
   },
   {
     id: 'p-08', num: 8, kind: 'play', cat: 'Offense', name: 'Stick',
-    short: 'A quick stick at 5 yards, a swing, and a go. A fast, safe call on a long down.',
+    short: 'A quick stick at 5 yards, a swing and a short out. Everything is inside 10 yards: a fast, safe call for a short yardage down.',
     points: [
-      'Formation 2x2. H stick at 5 (1), F swing (2), Z go (3).',
-      'Backside X curls (4) and Y hitches.',
+      'Formation 2x2. H stick at 5 (1), F swing (2), Z out at 9 (3).',
+      'Backside X curls at 8 (4) and Y hitches at 5. Nothing goes past 10 yards.',
       'Throw the stick if the defender widens; throw the swing if he sits inside.',
     ],
     beats: ['Cover 3', 'Zone', 'Man'],
     off: '2x2',
     routes: [
-      ['H', 'hitch', { depth: 5, order: 1 }], ['F', 'swing', { order: 2, hot: true }], ['Z', 'go', { depth: 20, order: 3 }],
-      ['X', 'curl', { depth: 10, order: 4 }], ['Y', 'hitch', { depth: 5 }],
+      ['H', 'hitch', { depth: 5, order: 1 }], ['F', 'swing', { order: 2, hot: true }], ['Z', 'out', { depth: 9, length: 6, order: 3 }],
+      ['X', 'curl', { depth: 8, order: 4 }], ['Y', 'hitch', { depth: 5 }],
     ],
   },
   {

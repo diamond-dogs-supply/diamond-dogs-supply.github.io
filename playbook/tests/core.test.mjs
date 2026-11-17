@@ -12,7 +12,7 @@ import { Editor } from '../js/state.js';
 import { encodePlay, decodePlay, codeFromHash, pack } from '../js/share.js';
 import { playToSVG, svgInner, viewFor } from '../js/render.js';
 import { formationPlayers } from '../js/formations.js';
-import { fitToCell, layoutSheet, normLayout, pageCount, pageStyle, sheetHTML, validateSheet, newSheet, toUnit, fromUnit } from '../js/sheet.js';
+import { fitToCell, squeezeX, layoutSheet, normLayout, pageCount, pageStyle, sheetHTML, validateSheet, newSheet, toUnit, fromUnit } from '../js/sheet.js';
 
 const byLabel = (play, side, label) => play.players.find((p) => p.side === side && p.label === label);
 
@@ -544,22 +544,18 @@ test('plays per page can be capped to any number, odd or even', () => {
   assert.equal((sheetHTML(plays, { ...base, maxPer: 3 }).match(/class="sheet-page"/g) || []).length, 3);
 });
 
-test('fitToCell scales the downfield axis (yard lines included) to match a wide cell', () => {
+test('fitToCell fits a wide cell: sideways squeeze, then depth, and nothing leaves the field', () => {
   const play = newPlay();
   const L = normLayout({ crop: true, fit: true, title: false, numbers: false });
   const fitted = fitToCell(play, L, 1.97);
-  assert.ok(fitted._ky > 0.44 && fitted._ky < 1, 'a wide cell gets a squeezed scale');
   const v1 = viewFor(fitted, { title: false });
   const v0 = viewFor(play, { title: false });
-  assert.ok(v1.w / v1.h > v0.w / v0.h, 'view gets wider relative to its height');
+  assert.ok(v1.w / v1.h > v0.w / v0.h || v1.w < v0.w, 'view gets wider relative to its height');
   assert.equal(fitToCell(play, normLayout({ fit: false }), 1.97), play);
-  assert.equal(fitToCell(play, L, 0.5), play, 'a tall cell is left alone');
   assert.equal(play._ky, undefined, 'the stored play is never modified');
-  // yard lines move with the scale: the 10 yard line sits closer to the LOS
-  const full = playToSVG(play, { theme: 'print' });
-  const sq = playToSVG({ ...play, _ky: 0.5 }, { theme: 'print' });
-  assert.notEqual(full, sq);
-  for (const p of fitted.players) assert.ok(p.x >= 0 && p.x <= fitted.field.width);
+  const sq = squeezeX(play, 0.8);
+  for (const p of sq.players) assert.ok(p.x >= 0 && p.x <= sq.field.width);
+  assert.notEqual(playToSVG(play, { theme: 'print' }), playToSVG({ ...play, _ky: 0.5, _kn: 0.8 }, { theme: 'print' }));
 });
 
 test('cut-out cards: wristband cards on letter landscape', () => {

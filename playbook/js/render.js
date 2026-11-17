@@ -29,17 +29,25 @@ export const esc = (s) =>
 const f = (v) => String(Math.round(v * 100) / 100);
 const safeColor = (c, fb) => (typeof c === 'string' && /^#[0-9a-fA-F]{6}$/.test(c) ? c : fb);
 
+export const KNEE = 8; // yards: short routes live inside this, so they keep the most room
+
 export function geom(play) {
   const { width: W, length: L, backfield: B } = play.field;
-  // Print cells can squeeze the downfield scale (play._ky, set by the sheet
-  // engine). Yard lines, players, routes and zones all share this one scale, so
-  // a 10 yard route still ends on the 10 yard line. The backfield is squeezed
-  // less so the QB and backs don't pile up on the line.
+  // Print cells can squeeze the downfield scale. Yard lines, players, routes
+  // and zones all share one piecewise scale, so a 10 yard route still ends on
+  // the 10 yard line. The first KNEE yards use the near scale (play._kn, default
+  // 1) and everything deeper uses the far scale (play._ky), so short routes stay
+  // readable while deep routes are squeezed. The backfield is squeezed less so
+  // the QB and backs don't pile up on the line.
   const ky = play._ky > 0 && play._ky < 1 ? play._ky : 1;
-  const kb = Math.max(ky, 0.75);
+  const kn = play._kn > 0 && play._kn < 1 ? Math.max(play._kn, ky) : 1;
+  const kb = Math.max(kn, 0.75);
+  const sy = (y) => L - B - (y < 0 ? y * kb : y <= KNEE ? y * kn : KNEE * kn + (y - KNEE) * ky);
   return {
-    W, L, B, ky,
-    sy: (y) => L - B - (y < 0 ? y * kb : y * ky),
+    W, L, B, ky, kn,
+    sy,
+    // half the height of an ellipse of yard-radius ry centred at yard y
+    ryOf: (y, ry) => Math.abs(sy(y - ry) - sy(y + ry)) / 2,
     vb: `${-MARGIN} ${-MARGIN} ${W + MARGIN * 2} ${L + MARGIN * 2}`,
     vbW: W + MARGIN * 2,
     vbH: L + MARGIN * 2,
@@ -71,7 +79,7 @@ export function viewFor(play, opts = {}) {
     const pad = r.hot ? 4.8 : 2.2; // room for the HOT tag
     for (const pt of routeScreenPoints(play, r)) add(pt.x - pad * K, pt.y - pad * K, pt.x + pad * K, pt.y + pad * K);
     const c = r.kind === 'zone' && r.zone ? zoneCenter(play, r) : null;
-    if (c) add(c.x - r.zone.rx - 0.4, g.sy(c.y) - r.zone.ry * g.ky - 0.4, c.x + r.zone.rx + 0.4, g.sy(c.y) + r.zone.ry * g.ky + 0.4);
+    if (c) add(c.x - r.zone.rx - 0.4, g.sy(c.y) - g.ryOf(c.y, r.zone.ry) - 0.4, c.x + r.zone.rx + 0.4, g.sy(c.y) + g.ryOf(c.y, r.zone.ry) + 0.4);
   }
   if (!xs.length) return fullView(g);
   ys.push(g.sy(0) - 1.2, g.sy(0) + 1.8 * K); // keep the line of scrimmage in frame (y only)
@@ -193,7 +201,7 @@ function zoneParts(play, route, g, K = 1) {
   const py = g.sy(player.y);
   const dx = px - cx;
   const dy = py - cy;
-  const k = Math.hypot(dx / route.zone.rx, dy / (route.zone.ry * g.ky));
+  const k = Math.hypot(dx / route.zone.rx, dy / g.ryOf(c.y, route.zone.ry));
   let line = null;
   if (k > 1.02) {
     const edge = { x: cx + dx / k, y: cy + dy / k };
@@ -209,7 +217,8 @@ function drawZone(play, route, g, opts, th, selected) {
   const zp = zoneParts(play, route, g, opts.glyph || 1);
   if (!zp) return { under: '', over: '' };
   const rx = route.zone.rx;
-  const ry = route.zone.ry * g.ky;
+  const cz = zoneCenter(play, route);
+  const ry = g.ryOf(cz.y, route.zone.ry);
   const color = safeColor(route.color, th.routeD);
   const K = opts.glyph || 1;
   const sw = (selected ? 0.34 : 0.24) * K;

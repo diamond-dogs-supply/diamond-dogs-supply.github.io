@@ -255,6 +255,9 @@ export function initSheets({ getPlays, toast, printRoot }) {
     // letter landscape fits two 5 in cards across and two 2.75 in cards down, with room to cut
     patchLayout({ preset: 'letter-l', unit: 'in', mode: 'cards', cardW: 5, cardH: 2.75, cols: 2, rows: 2, margin: 0.4, gap: 0.2, border: true, crop: true, fit: true, title: false, numbers: true, maxPer: 0 });
   });
+  $('sh-wrist2').addEventListener('click', () => {
+    patchLayout({ preset: 'letter-l', unit: 'in', mode: 'cards', cardW: 5, cardH: 2.75, cols: 2, rows: 1, margin: 0.4, gap: 0.2, border: true, crop: true, fit: true, title: false, numbers: true, maxPer: 0 });
+  });
   $('sh-maxper').addEventListener('change', (e) => patchLayout({ maxPer: Number(e.target.value) || 0 }));
   for (const b of dlg.querySelectorAll('[data-mode]')) b.addEventListener('click', () => patchLayout({ mode: b.dataset.mode }));
   for (const k of ['title', 'numbers', 'border', 'crop', 'order', 'primary', 'hot', 'fit']) $('sh-' + k).addEventListener('change', (e) => patchLayout({ [k]: e.target.checked }));

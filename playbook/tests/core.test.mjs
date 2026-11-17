@@ -536,10 +536,10 @@ test('route numbers can be hidden in the render and in print sheets', () => {
 
 test('plays per page can be capped to any number, odd or even', () => {
   const base = { preset: 'letter-l', mode: 'fixed', cellW: 5, cellH: 2.75, margin: 0.4, gap: 0.15 };
-  assert.equal(layoutSheet(base).perPage, 6);
+  assert.equal(layoutSheet(base).perPage, 4); // 2 x 2 fits; a third row of 2.75in does not
   assert.equal(layoutSheet({ ...base, maxPer: 3 }).perPage, 3);
   assert.equal(layoutSheet({ ...base, maxPer: 4 }).perPage, 4);
-  assert.equal(layoutSheet({ ...base, maxPer: 99 }).perPage, 6);
+  assert.equal(layoutSheet({ ...base, maxPer: 99 }).perPage, 4);
   const plays = Array.from({ length: 7 }, (_, i) => newPlay('P' + i));
   assert.equal((sheetHTML(plays, { ...base, maxPer: 3 }).match(/class="sheet-page"/g) || []).length, 3);
 });

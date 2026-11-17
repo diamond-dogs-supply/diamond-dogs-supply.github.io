@@ -59,3 +59,22 @@ test('mixInto copies only the chosen half and parts', () => {
   ed.undo();
   assert.equal(ed.play.routes.length, 0);
 });
+
+test('no library route leaves the field, in either direction', async () => {
+  const { routeStart } = await import('../js/model.js');
+  for (const e of ENTRIES) {
+    for (const flip of [false, true]) {
+      const p = playFor(e.id, { flip });
+      const { width: W, length: L, backfield: B } = p.field;
+      for (const r of p.routes) {
+        if (r.kind === 'zone') continue;
+        const s = routeStart(p, r);
+        for (const pt of r.points) {
+          const x = s.x + pt.x;
+          const y = s.y + pt.y;
+          assert.ok(x >= 0 && x <= W && y >= -B && y <= L - B, `${e.id}${flip ? ' flipped' : ''} route leaves the field`);
+        }
+      }
+    }
+  }
+});

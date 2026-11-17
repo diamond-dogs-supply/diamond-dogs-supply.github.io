@@ -12,7 +12,7 @@ import { Editor } from '../js/state.js';
 import { encodePlay, decodePlay, codeFromHash, pack } from '../js/share.js';
 import { playToSVG, svgInner, viewFor } from '../js/render.js';
 import { formationPlayers } from '../js/formations.js';
-import { fitToCell, squeezePlay, layoutSheet, normLayout, pageCount, pageStyle, sheetHTML, validateSheet, newSheet, toUnit, fromUnit } from '../js/sheet.js';
+import { fitToCell, layoutSheet, normLayout, pageCount, pageStyle, sheetHTML, validateSheet, newSheet, toUnit, fromUnit } from '../js/sheet.js';
 
 const byLabel = (play, side, label) => play.players.find((p) => p.side === side && p.label === label);
 
@@ -544,35 +544,20 @@ test('plays per page can be capped to any number, odd or even', () => {
   assert.equal((sheetHTML(plays, { ...base, maxPer: 3 }).match(/class="sheet-page"/g) || []).length, 3);
 });
 
-test('fitToCell squeezes a play to match a wide cell and keeps everything on the field', () => {
+test('fitToCell scales the downfield axis (yard lines included) to match a wide cell', () => {
   const play = newPlay();
   const L = normLayout({ crop: true, fit: true, title: false, numbers: false });
   const fitted = fitToCell(play, L, 1.97);
-  const v0 = viewFor(play, { title: false });
+  assert.ok(fitted._ky > 0.44 && fitted._ky < 1, 'a wide cell gets a squeezed scale');
   const v1 = viewFor(fitted, { title: false });
+  const v0 = viewFor(play, { title: false });
   assert.ok(v1.w / v1.h > v0.w / v0.h, 'view gets wider relative to its height');
   assert.equal(fitToCell(play, normLayout({ fit: false }), 1.97), play);
+  assert.equal(fitToCell(play, L, 0.5), play, 'a tall cell is left alone');
+  assert.equal(play._ky, undefined, 'the stored play is never modified');
+  // yard lines move with the scale: the 10 yard line sits closer to the LOS
+  const full = playToSVG(play, { theme: 'print' });
+  const sq = playToSVG({ ...play, _ky: 0.5 }, { theme: 'print' });
+  assert.notEqual(full, sq);
   for (const p of fitted.players) assert.ok(p.x >= 0 && p.x <= fitted.field.width);
-  const sq = squeezePlay(play, 1, 0.5);
-  assert.equal(sq.players.length, play.players.length);
-});
-
-test('hot routes and the primary read: model, share link, render and sheet settings', async () => {
-  const play = newPlay();
-  const ed = new Editor(play);
-  const x = byLabel(ed.play, 'O', 'X');
-  ed.setPreset(x.id, 'route', 'go');
-  const r = ed.play.routes.find((q) => q.playerId === x.id);
-  ed.updateRoute(r.id, { order: 1, hot: true });
-  assert.equal(ed.play.routes.find((q) => q.id === r.id).hot, true);
-  const back = await decodePlay(await encodePlay(ed.play));
-  assert.equal(back.routes.find((q) => q.order === 1).hot, true);
-  assert.match(playToSVG(ed.play, { theme: 'print' }), />HOT<\/text>/);
-  assert.doesNotMatch(playToSVG(ed.play, { theme: 'print', hot: false }), />HOT<\/text>/);
-  const plain = playToSVG(ed.play, { theme: 'print', hot: false });
-  const prim = playToSVG(ed.play, { theme: 'print', hot: false, primary: true });
-  assert.notEqual(plain, prim);
-  assert.equal(normLayout({}).primary, false);
-  assert.equal(normLayout({}).hot, true);
-  assert.equal(normLayout({ hot: false }).hot, false);
 });

@@ -117,62 +117,29 @@ export function pageStyle(layoutIn) {
   return `@page{size:${L.pageW}in ${L.pageH}in;margin:0}`;
 }
 
-// Scales a play's coordinates (players, route points, zone sizes) by kx sideways
-// and ky downfield. Circles and letters stay round because only positions change.
-export function squeezePlay(play, kx, ky) {
-  const q = JSON.parse(JSON.stringify(play));
-  const cx = q.field.width / 2;
-  // players barely compress downfield (keeps the backfield from piling up);
-  // route lengths take the squeeze
-  const kp = Math.max(ky, 0.75);
-  for (const p of q.players) {
-    p.x = cx + (p.x - cx) * kx;
-    p.y *= kp;
-  }
-  for (const r of q.routes) {
-    for (const pt of r.points) {
-      pt.x *= kx;
-      pt.y *= ky;
-    }
-    if (r.zone) {
-      r.zone.rx *= kx;
-      r.zone.ry *= ky;
-    }
-  }
-  return q;
-}
-
-// Finds the stretch/squeeze that makes the cropped view's shape match the
-// cell's, so the diagram fills the cell instead of leaving empty bands. In a
-// wide cell the players spread out sideways a little (up to 25%, staying on the
-// field) before the depth is squeezed; in a tall cell the width is squeezed.
+// Finds the downfield scale that makes the cropped view's shape match the
+// cell's, so the diagram fills a wide cell instead of leaving empty bands. The
+// scale goes to the renderer (play._ky), which applies it to the yard lines,
+// players, routes and zones together, so depths stay honest: a 10 yard route
+// still ends on the 10 yard line, the lines are just closer together. Tall
+// cells are left alone: the diagram simply gets more room downfield. Never
+// squeezes below 45%.
 export function fitToCell(play, L, aspect) {
   if (!L.fit || !L.crop) return play;
   const vopts = { show: L.show, title: L.title || L.numbers };
-  const shape = (p) => {
-    const v = viewFor(p, vopts);
+  const shape = (ky) => {
+    const v = viewFor({ ...play, _ky: ky }, vopts);
     return v.w / v.h;
   };
-  const a0 = shape(play);
-  if (Math.abs(a0 / aspect - 1) < 0.03) return play;
-  const wide = aspect > a0;
-  let kx = 1;
-  if (wide) {
-    const cx = play.field.width / 2;
-    const reach = Math.max(1, ...play.players.map((p) => Math.abs(p.x - cx)));
-    kx = Math.max(1, Math.min(1.25, (play.field.width / 2 - 1.5) / reach));
-  }
+  if (shape(1) >= aspect * 0.97) return play; // already wide enough
   let k = 1;
-  let best = wide ? squeezePlay(play, kx, 1) : play;
-  for (let i = 0; i < 8; i++) {
-    const a = shape(best);
+  for (let i = 0; i < 10; i++) {
+    const a = shape(k);
     if (Math.abs(a / aspect - 1) < 0.03) break;
-    const step = Math.pow(a / aspect, 0.8);
-    k = Math.max(0.45, Math.min(1, k * (wide ? step : 1 / step)));
-    best = wide ? squeezePlay(play, kx, k) : squeezePlay(play, k, 1);
+    k = Math.max(0.45, Math.min(1, k * Math.pow(a / aspect, 0.9)));
     if (k <= 0.45) break;
   }
-  return best;
+  return k >= 0.99 ? play : { ...play, _ky: k };
 }
 
 function cellSVG(playIn, n, L, aspect, cellW) {

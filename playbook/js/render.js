@@ -31,9 +31,15 @@ const safeColor = (c, fb) => (typeof c === 'string' && /^#[0-9a-fA-F]{6}$/.test(
 
 export function geom(play) {
   const { width: W, length: L, backfield: B } = play.field;
+  // Print cells can squeeze the downfield scale (play._ky, set by the sheet
+  // engine). Yard lines, players, routes and zones all share this one scale, so
+  // a 10 yard route still ends on the 10 yard line. The backfield is squeezed
+  // less so the QB and backs don't pile up on the line.
+  const ky = play._ky > 0 && play._ky < 1 ? play._ky : 1;
+  const kb = Math.max(ky, 0.75);
   return {
-    W, L, B,
-    sy: (y) => L - B - y,
+    W, L, B, ky,
+    sy: (y) => L - B - (y < 0 ? y * kb : y * ky),
     vb: `${-MARGIN} ${-MARGIN} ${W + MARGIN * 2} ${L + MARGIN * 2}`,
     vbW: W + MARGIN * 2,
     vbH: L + MARGIN * 2,
@@ -65,7 +71,7 @@ export function viewFor(play, opts = {}) {
     const pad = r.hot ? 4.8 : 2.2; // room for the HOT tag
     for (const pt of routeScreenPoints(play, r)) add(pt.x - pad * K, pt.y - pad * K, pt.x + pad * K, pt.y + pad * K);
     const c = r.kind === 'zone' && r.zone ? zoneCenter(play, r) : null;
-    if (c) add(c.x - r.zone.rx - 0.4, g.sy(c.y) - r.zone.ry - 0.4, c.x + r.zone.rx + 0.4, g.sy(c.y) + r.zone.ry + 0.4);
+    if (c) add(c.x - r.zone.rx - 0.4, g.sy(c.y) - r.zone.ry * g.ky - 0.4, c.x + r.zone.rx + 0.4, g.sy(c.y) + r.zone.ry * g.ky + 0.4);
   }
   if (!xs.length) return fullView(g);
   ys.push(g.sy(0) - 1.2, g.sy(0) + 1.8 * K); // keep the line of scrimmage in frame (y only)
@@ -189,7 +195,7 @@ function zoneParts(play, route, g, K = 1) {
   const py = g.sy(player.y);
   const dx = px - cx;
   const dy = py - cy;
-  const k = Math.hypot(dx / route.zone.rx, dy / route.zone.ry);
+  const k = Math.hypot(dx / route.zone.rx, dy / (route.zone.ry * g.ky));
   let line = null;
   if (k > 1.02) {
     const edge = { x: cx + dx / k, y: cy + dy / k };
@@ -204,7 +210,8 @@ function zoneParts(play, route, g, K = 1) {
 function drawZone(play, route, g, opts, th, selected) {
   const zp = zoneParts(play, route, g, opts.glyph || 1);
   if (!zp) return { under: '', over: '' };
-  const { rx, ry } = route.zone;
+  const rx = route.zone.rx;
+  const ry = route.zone.ry * g.ky;
   const color = safeColor(route.color, th.routeD);
   const K = opts.glyph || 1;
   const sw = (selected ? 0.34 : 0.24) * K;

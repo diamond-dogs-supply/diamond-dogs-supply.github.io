@@ -561,3 +561,21 @@ test('fitToCell scales the downfield axis (yard lines included) to match a wide 
   assert.notEqual(full, sq);
   for (const p of fitted.players) assert.ok(p.x >= 0 && p.x <= fitted.field.width);
 });
+
+test('cut-out cards: wristband cards on letter landscape', () => {
+  const L = { preset: 'letter-l', mode: 'cards', cardW: 5, cardH: 2.75, cols: 2, rows: 2, margin: 0.4, gap: 0.2 };
+  const g = layoutSheet(L);
+  assert.equal(g.cardCols, 2);
+  assert.equal(g.cardRows, 2); // a third row of 2.75in cards would not fit
+  assert.equal(g.perCard, 4);
+  assert.equal(g.perPage, 16);
+  assert.ok(g.cellW > 2.2 && g.cellH > 1.1 && g.ok);
+  // 10.2in across for two cards plus the gap fits the 10.2in between 0.4in margins
+  assert.ok(2 * g.cardW + 0.2 <= 11 - 0.8 + 1e-6);
+  const plays = Array.from({ length: 18 }, (_, i) => newPlay('P' + i));
+  const html = sheetHTML(plays, L);
+  assert.equal((html.match(/class="sheet-page cards"/g) || []).length, 2); // 18 plays -> 2 pages
+  assert.equal((html.match(/class="card"/g) || []).length, 4 + 1); // 16 on page one, 2 on page two (one card)
+  assert.match(pageStyle(L), /11in 8\.5in/);
+  assert.equal(normLayout({ mode: 'cards' }).mode, 'cards');
+});

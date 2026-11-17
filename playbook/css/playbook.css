@@ -241,3 +241,7 @@ dialog p { margin: 0; }
 	.lib-body { display: flex; flex-direction: column; overflow: auto; }
 	.lib-grid { overflow: visible; }
 }
+
+/* cut-out cards on a page (wristbands) */
+.sheet-page.cards { align-items: start; }
+.card { display: grid; box-sizing: border-box; background: #fff; border: 1px dashed #777; overflow: hidden; }

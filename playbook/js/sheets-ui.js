@@ -40,7 +40,7 @@ export function initSheets({ getPlays, toast, printRoot }) {
 
   // ---- layout controls ------------------------------------------------------
   const num = (id) => $(id);
-  const fields = { w: 'pageW', h: 'pageH', margin: 'margin', gap: 'gap', cw: 'cellW', ch: 'cellH' };
+  const fields = { w: 'pageW', h: 'pageH', margin: 'margin', gap: 'gap', cw: 'cellW', ch: 'cellH', cardw: 'cardW', cardh: 'cardH' };
 
   function fillControls(L) {
     const u = L.unit;
@@ -61,11 +61,15 @@ export function initSheets({ getPlays, toast, printRoot }) {
     set('cols', L.cols, 1);
     set('rows', L.rows, 1);
     set('maxper', L.maxPer || '', 1);
+    set('cardw', toUnit(L.cardW, u), 0.05);
+    set('cardh', toUnit(L.cardH, u), 0.05);
     for (const k of ['title', 'numbers', 'border', 'crop', 'order', 'primary', 'hot', 'fit']) $('sh-' + k).checked = L[k];
     $('sh-show').value = L.show;
     $('sh-fit').disabled = !L.crop; // fitting works on the zoomed view, so it needs "Zoom to the action"
     for (const b of dlg.querySelectorAll('[data-mode]')) b.classList.toggle('on', b.dataset.mode === L.mode);
-    $('sh-grid-row').hidden = L.mode !== 'grid';
+    $('sh-grid-row').hidden = L.mode === 'fixed';
+    $('sh-cards-row').hidden = L.mode !== 'cards';
+    $('sh-maxper').closest('label').hidden = L.mode === 'cards';
     $('sh-fixed-row').hidden = L.mode !== 'fixed';
     const custom = L.preset === 'custom';
     $('sh-w').disabled = !custom;
@@ -109,7 +113,7 @@ export function initSheets({ getPlays, toast, printRoot }) {
     const unitName = u === 'cm' ? 'cm' : 'in';
     const fmt = (v) => toUnit(v, u);
     const pages = pageCount(plays.length, g.perPage);
-    let t = `${g.cols} × ${g.rows} grid, ${g.perPage} per page${g.perPage < g.cols * g.rows ? ` (room for ${g.cols * g.rows})` : ''}. Each play is ${fmt(g.cellW)} × ${fmt(g.cellH)} ${unitName}.`;
+    let t = g.cardCols ? `${g.cardCols * g.cardRows} card${g.cardCols * g.cardRows === 1 ? '' : 's'} (${fmt(g.cardW)} × ${fmt(g.cardH)} ${unitName}) per page, ${g.perCard} plays on each card, ${g.perPage} per page. Each play is ${fmt(g.cellW)} × ${fmt(g.cellH)} ${unitName}.` : `${g.cols} × ${g.rows} grid, ${g.perPage} per page${g.perPage < g.cols * g.rows ? ` (room for ${g.cols * g.rows})` : ''}. Each play is ${fmt(g.cellW)} × ${fmt(g.cellH)} ${unitName}.`;
     t += plays.length ? ` ${plays.length} play${plays.length === 1 ? '' : 's'} makes ${pages} page${pages === 1 ? '' : 's'}.` : '';
     if (!g.ok) t = 'These sizes leave too little room for a play. Make the page bigger or the margins and gaps smaller.';
     $('sh-summary').textContent = t;
@@ -247,6 +251,10 @@ export function initSheets({ getPlays, toast, printRoot }) {
   for (const [id, key] of [['cols', 'cols'], ['rows', 'rows']]) {
     $('sh-' + id).addEventListener('change', (e) => patchLayout({ [key]: Number(e.target.value) }));
   }
+  $('sh-wrist').addEventListener('click', () => {
+    // letter landscape fits two 5 in cards across and two 2.75 in cards down, with room to cut
+    patchLayout({ preset: 'letter-l', unit: 'in', mode: 'cards', cardW: 5, cardH: 2.75, cols: 2, rows: 2, margin: 0.4, gap: 0.2, border: true, crop: true, fit: true, title: false, numbers: true, maxPer: 0 });
+  });
   $('sh-maxper').addEventListener('change', (e) => patchLayout({ maxPer: Number(e.target.value) || 0 }));
   for (const b of dlg.querySelectorAll('[data-mode]')) b.addEventListener('click', () => patchLayout({ mode: b.dataset.mode }));
   for (const k of ['title', 'numbers', 'border', 'crop', 'order', 'primary', 'hot', 'fit']) $('sh-' + k).addEventListener('change', (e) => patchLayout({ [k]: e.target.checked }));

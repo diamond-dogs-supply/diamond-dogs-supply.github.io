@@ -27,9 +27,12 @@ export const SHEET_DEFAULT = Object.freeze({
   pageH: 11,
   margin: 0.4,
   gap: 0.12,
-  mode: 'grid', // 'grid' = fill the page with cols x rows, 'fixed' = every play is cellW x cellH
+  mode: 'grid', // 'grid' = fill the page with cols x rows, 'fixed' = every play is cellW x cellH,
+  // 'cards' = as many cardW x cardH cards as fit, each holding a cols x rows grid of plays
   cols: 3,
   rows: 4,
+  cardW: 5, // 'cards' mode: each card (a wristband, say) holds a small grid of plays
+  cardH: 2.75,
   maxPer: 0, // 0 = as many as fit; otherwise stop after this many plays per page
   cellW: 2.4,
   cellH: 1.7,
@@ -44,6 +47,8 @@ export const SHEET_DEFAULT = Object.freeze({
   show: 'all',
 });
 
+const CARD_PAD = 0.06; // inside each card, around the plays
+const CARD_GAP = 0.05; // between plays on a card
 const round = (v, d = 3) => Math.round(v * 10 ** d) / 10 ** d;
 
 export function normLayout(raw = {}) {
@@ -65,10 +70,12 @@ export function normLayout(raw = {}) {
     pageH: round(pageH),
     margin: round(Math.min(margin, Math.min(pageW, pageH) / 3)),
     gap: round(gap),
-    mode: raw.mode === 'fixed' ? 'fixed' : 'grid',
+    mode: raw.mode === 'fixed' ? 'fixed' : raw.mode === 'cards' ? 'cards' : 'grid',
     cols: Math.round(clamp(num(raw.cols, d.cols), 1, 8)),
     rows: Math.round(clamp(num(raw.rows, d.rows), 1, 10)),
     maxPer: Math.round(clamp(num(raw.maxPer, d.maxPer), 0, 80)),
+    cardW: round(clamp(num(raw.cardW, d.cardW), 1.5, 40)),
+    cardH: round(clamp(num(raw.cardH, d.cardH), 1, 40)),
     cellW: round(clamp(num(raw.cellW, d.cellW), 0.8, 40)),
     cellH: round(clamp(num(raw.cellH, d.cellH), 0.6, 40)),
     title: raw.title === undefined ? d.title : !!raw.title,
@@ -92,6 +99,23 @@ export function layoutSheet(layoutIn) {
   let rows;
   let cellW;
   let cellH;
+  if (L.mode === 'cards') {
+    // cut-out cards on the page, each holding a small grid of plays
+    const cardW = Math.min(L.cardW, usableW);
+    const cardH = Math.min(L.cardH, usableH);
+    const cardCols = Math.max(1, Math.floor((usableW + L.gap + 1e-6) / (cardW + L.gap)));
+    const cardRows = Math.max(1, Math.floor((usableH + L.gap + 1e-6) / (cardH + L.gap)));
+    cols = L.cols;
+    rows = L.rows;
+    cellW = (cardW - 2 * CARD_PAD - CARD_GAP * (cols - 1)) / cols;
+    cellH = (cardH - 2 * CARD_PAD - CARD_GAP * (rows - 1)) / rows;
+    const perCard = cols * rows;
+    const ok = usableW > 0.5 && usableH > 0.5 && cellW >= 0.5 && cellH >= 0.4;
+    return {
+      layout: L, cols, rows, cellW: round(cellW), cellH: round(cellH), cardW: round(cardW), cardH: round(cardH), cardCols, cardRows,
+      perCard, perPage: cardCols * cardRows * perCard, fit: cardCols * cardRows * perCard, usableW: round(usableW), usableH: round(usableH), ok,
+    };
+  }
   if (L.mode === 'fixed') {
     cellW = Math.min(L.cellW, usableW);
     cellH = Math.min(L.cellH, usableH);
@@ -167,6 +191,20 @@ export function sheetHTML(plays, layoutIn) {
   const L = g.layout;
   const aspect = g.cellW / g.cellH;
   const pages = [];
+  if (L.mode === 'cards') {
+    const cellStyle = `grid-template-columns:repeat(${g.cols},${g.cellW}in);grid-auto-rows:${g.cellH}in;gap:${CARD_GAP}in;padding:${CARD_PAD}in`;
+    const cell = (p, n) => `<div class="cell${L.border ? ' bordered' : ''}" role="group" aria-label="${esc(`Play ${n}: ${p.name || 'Untitled'}`)}">${cellSVG(p, n, L, aspect, g.cellW)}</div>`;
+    for (let i = 0; i < plays.length; i += g.perPage) {
+      const cards = [];
+      for (let j = i; j < Math.min(plays.length, i + g.perPage); j += g.perCard) {
+        const inner = plays.slice(j, Math.min(plays.length, j + g.perCard)).map((p, k) => cell(p, j + k + 1)).join('');
+        cards.push(`<div class="card" style="width:${g.cardW}in;height:${g.cardH}in;${cellStyle}">${inner}</div>`);
+      }
+      const style = `width:${L.pageW}in;height:${round(L.pageH - 0.02)}in;padding:${L.margin}in;gap:${L.gap}in;grid-template-columns:repeat(${g.cardCols},${g.cardW}in);grid-auto-rows:${g.cardH}in;justify-content:center;align-content:center`;
+      pages.push(`<section class="sheet-page cards" style="${style}">${cards.join('')}</section>`);
+    }
+    return pages.join('');
+  }
   for (let i = 0; i < plays.length; i += g.perPage) {
     const cells = plays
       .slice(i, i + g.perPage)

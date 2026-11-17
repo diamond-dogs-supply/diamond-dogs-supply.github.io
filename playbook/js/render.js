@@ -9,14 +9,14 @@ export const THEMES = {
     page: '#14391a', field: '#2e7d32', border: '#ffffff', line: 'rgba(255,255,255,0.35)',
     tick: 'rgba(255,255,255,0.5)', num: 'rgba(255,255,255,0.6)', los: '#ffffff',
     offFill: '#ffffff', offStroke: '#10202b', offText: '#10202b', def: '#ff7b7b', halo: 'rgba(0,0,0,0.55)',
-    routeO: '#ffe066', routeD: '#ffb3b3', primary: '#ff8a1f', badgeFill: '#10202b', badgeText: '#ffffff',
+    routeO: '#ffe066', routeD: '#ffb3b3', primary: '#ff4d4d', hot: '#ff9f1c', badgeFill: '#10202b', badgeText: '#ffffff',
     chip: 'rgba(16,32,43,0.88)', chipText: '#ffffff', sel: '#4dd0e1',
   },
   print: {
     page: '#ffffff', field: '#ffffff', border: '#222222', line: '#d6d6d6',
     tick: '#9a9a9a', num: '#8a8a8a', los: '#222222',
     offFill: '#ffffff', offStroke: '#111111', offText: '#111111', def: '#b00020', halo: 'rgba(255,255,255,0.9)',
-    routeO: '#111111', routeD: '#b00020', primary: '#1d4ed8', badgeFill: '#ffffff', badgeText: '#111111',
+    routeO: '#111111', routeD: '#b00020', primary: '#d62828', hot: '#e67700', badgeFill: '#ffffff', badgeText: '#111111',
     chip: '#111111', chipText: '#ffffff', sel: '#0097a7',
   },
 };
@@ -128,15 +128,13 @@ function dirOf(pts) {
   return { x: dx / len, y: dy / len, len: Math.hypot(dx, dy) };
 }
 
-const HOT_COLOR = '#d62828';
-
 function drawRoute(play, route, opts, th, selected, ptsOverride) {
   const player = findPlayer(play, route.playerId);
   const pts = ptsOverride || routeScreenPoints(play, route);
   if (pts.length < 2) return '';
   const isHot = !!route.hot && opts.hot !== false;
   const isPrimary = !!opts.primary && route.order === 1;
-  const color = safeColor(route.color, isHot ? HOT_COLOR : isPrimary ? th.primary : player && player.side === 'D' ? th.routeD : th.routeO);
+  const color = safeColor(route.color, isHot ? th.hot : isPrimary ? th.primary : player && player.side === 'D' ? th.routeD : th.routeO);
   const K = opts.glyph || 1;
   const width = (selected ? 0.38 : 0.28) * K;
   const dir = dirOf(pts);
@@ -175,7 +173,7 @@ function drawRoute(play, route, opts, th, selected, ptsOverride) {
     const dist = route.order > 0 && opts.order !== false ? 4.4 : 2.1;
     const hx = tip.x + dir.x * dist * K;
     const hy = tip.y + dir.y * dist * K;
-    out += `<rect x="${f(hx - 1.35 * K)}" y="${f(hy - 0.62 * K)}" width="${f(2.7 * K)}" height="${f(1.24 * K)}" rx="${f(0.35 * K)}" fill="${HOT_COLOR}"/>`;
+    out += `<rect x="${f(hx - 1.35 * K)}" y="${f(hy - 0.62 * K)}" width="${f(2.7 * K)}" height="${f(1.24 * K)}" rx="${f(0.35 * K)}" fill="${th.hot}"/>`;
     out += `<text x="${f(hx)}" y="${f(hy + 0.34 * K)}" text-anchor="middle" font-family="${FONT}" font-size="${f(0.88 * K)}" font-weight="700" fill="#ffffff">HOT</text>`;
   }
   if (opts.editor) {

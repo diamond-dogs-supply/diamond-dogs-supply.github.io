@@ -9,14 +9,14 @@ export const THEMES = {
     page: '#14391a', field: '#2e7d32', border: '#ffffff', line: 'rgba(255,255,255,0.35)',
     tick: 'rgba(255,255,255,0.5)', num: 'rgba(255,255,255,0.6)', los: '#ffffff',
     offFill: '#ffffff', offStroke: '#10202b', offText: '#10202b', def: '#ff7b7b', halo: 'rgba(0,0,0,0.55)',
-    routeO: '#ffe066', routeD: '#ffb3b3', badgeFill: '#10202b', badgeText: '#ffffff',
+    routeO: '#ffe066', routeD: '#ffb3b3', primary: '#ff8a1f', badgeFill: '#10202b', badgeText: '#ffffff',
     chip: 'rgba(16,32,43,0.88)', chipText: '#ffffff', sel: '#4dd0e1',
   },
   print: {
     page: '#ffffff', field: '#ffffff', border: '#222222', line: '#d6d6d6',
     tick: '#9a9a9a', num: '#8a8a8a', los: '#222222',
     offFill: '#ffffff', offStroke: '#111111', offText: '#111111', def: '#b00020', halo: 'rgba(255,255,255,0.9)',
-    routeO: '#111111', routeD: '#b00020', badgeFill: '#ffffff', badgeText: '#111111',
+    routeO: '#111111', routeD: '#b00020', primary: '#1d4ed8', badgeFill: '#ffffff', badgeText: '#111111',
     chip: '#111111', chipText: '#ffffff', sel: '#0097a7',
   },
 };
@@ -136,9 +136,9 @@ function drawRoute(play, route, opts, th, selected, ptsOverride) {
   if (pts.length < 2) return '';
   const isHot = !!route.hot && opts.hot !== false;
   const isPrimary = !!opts.primary && route.order === 1;
-  const color = safeColor(route.color, isHot ? HOT_COLOR : player && player.side === 'D' ? th.routeD : th.routeO);
+  const color = safeColor(route.color, isHot ? HOT_COLOR : isPrimary ? th.primary : player && player.side === 'D' ? th.routeD : th.routeO);
   const K = opts.glyph || 1;
-  const width = (selected ? 0.38 : 0.28) * K * (isPrimary ? 1.7 : 1);
+  const width = (selected ? 0.38 : 0.28) * K;
   const dir = dirOf(pts);
   const tip = pts[pts.length - 1];
   const line = pts.slice();
@@ -166,9 +166,9 @@ function drawRoute(play, route, opts, th, selected, ptsOverride) {
   if (route.order > 0 && opts.order !== false) {
     const bx = tip.x + dir.x * 1.9 * K;
     const by = tip.y + dir.y * 1.9 * K;
-    const rad = (isPrimary ? 1.05 : 0.8) * K;
+    const rad = 0.8 * K;
     out += `<circle cx="${f(bx)}" cy="${f(by)}" r="${f(rad)}" fill="${isPrimary ? color : th.badgeFill}" stroke="${color}" stroke-width="${f(0.14 * K)}"/>`;
-    out += `<text x="${f(bx)}" y="${f(by + 0.36 * K)}" text-anchor="middle" font-family="${FONT}" font-size="${f((isPrimary ? 1.2 : 0.95) * K)}" font-weight="700" fill="${isPrimary ? '#ffffff' : th.badgeText}">${route.order}</text>`;
+    out += `<text x="${f(bx)}" y="${f(by + 0.36 * K)}" text-anchor="middle" font-family="${FONT}" font-size="${f(0.95 * K)}" font-weight="700" fill="${isPrimary ? '#ffffff' : th.badgeText}">${route.order}</text>`;
   }
   if (isHot) {
     // a small HOT tag beside the end of the route (beyond the read badge when there is one)
